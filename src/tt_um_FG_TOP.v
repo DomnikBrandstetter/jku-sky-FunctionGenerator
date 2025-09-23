@@ -47,14 +47,14 @@ always @(posedge clk) begin
   end else if (WR_enable) begin
     // write selected register
     case (uio_in[6:4])            // only 0..7 used
-      4'd0: CR0 <= ui_in;
-      4'd1: CR1 <= ui_in;
-      4'd2: CR2 <= ui_in;
-      4'd3: CR3 <= ui_in;
-      4'd4: CR4 <= ui_in;
-      4'd5: CR5 <= ui_in;
-      4'd6: CR6 <= ui_in;
-      4'd7: CR7 <= ui_in;
+      3'd0: CR0 <= ui_in;
+      3'd1: CR1 <= ui_in;
+      3'd2: CR2 <= ui_in;
+      3'd3: CR3 <= ui_in;
+      3'd4: CR4 <= ui_in;
+      3'd5: CR5 <= ui_in;
+      3'd6: CR6 <= ui_in;
+      3'd7: CR7 <= ui_in;
       default: /* no write */;
     endcase
   end
@@ -115,5 +115,6 @@ assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write da
 //localparam real VDD = 3.3;
 ///localparam real voltage__digit =  (2**BITWIDTH - 1) / VDD;
 //localparam real CORDIC_GAIN = 1.647;
+
 
 endmodule
