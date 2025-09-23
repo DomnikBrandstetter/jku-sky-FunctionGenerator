@@ -85,26 +85,8 @@ assign amplitude = CR_bus_i[AMPLITUDE_POS+AMPLITUDE_BITWIDTH-1:AMPLITUDE_POS];
 wire signed [OFFSET_BITWIDTH-1:0] offset;
 assign offset = CR_bus_i[OFFSET_POS+OFFSET_BITWIDTH-1:OFFSET_POS];
 
-// ----------------------- SYNCHRONIZED ASYNCHRONOUS RESET ----------------------- //
-
-//SET Timing constraint
-//set_false_path -from [get_ports {rstn_i}]
-
-reg rst_n_reg [1:0];
 wire rst_n;
-
-assign rst_n = rst_n_reg[1];
-
-always @ (posedge clk_i, negedge rstn_i)
-begin
-    if (!rstn_i) begin
-       rst_n_reg[0]     <= 1'b0;
-       rst_n_reg[1]     <= 1'b0;
-    end else begin
-       rst_n_reg[0]     <= 1'b1;
-       rst_n_reg[1]     <= rst_n_reg[0];
-    end
-end
+assign rst_n = rstn_i;
 
 // ----------------------- TIMER ----------------------- //
 
@@ -226,5 +208,6 @@ assign out_signed = out;
 assign out_unsigned = out + SIGNED_TO_UNSIGNED[BITWIDTH-1:0];
 
 assign out_o = Radix? out_unsigned : out_signed;
+
 
 endmodule
