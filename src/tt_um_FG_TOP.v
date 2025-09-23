@@ -105,3 +105,5 @@ assign uio_out[0] = 1'd1; // ON LED
 assign uio_out[1] = rst_n; // dac_clr_o clear / resets the DAC
 assign uio_out[2] = 1'd1; // dac_pd_o // disable power down mode
 assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write data
+
+endmodule
