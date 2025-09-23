@@ -79,11 +79,7 @@ FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .
     .rstn_i (rst_n),
     .outputEnable_i (enable_i),
 
-    .CR_1_i (CR_1),
-    .CR_2_i (CR_2),
-    .CR_3_i (CR_3),
-    .CR_4_i (CR_4),
-    .CR_5_i (CR_5),
+    .CR_bus_i (CR_bus),
     .out_o (dac_o),
     .outValid_STRB_o(d_Valid_STRB)
 );       
@@ -107,3 +103,4 @@ assign uio_out[2] = 1'd1; // dac_pd_o // disable power down mode
 assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write data
 
 endmodule
+
