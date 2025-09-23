@@ -21,7 +21,7 @@ module FG_Synchronizer #(parameter STAGES = 2)(
     reg [STAGES-1:0] sync_regs;
     integer i;
     
-    always @(posedge clk_i, negedge rstn_i) begin
+    always @(posedge clk_i) begin
 
         if (!rstn_i) begin
             sync_regs[0] <= 0;

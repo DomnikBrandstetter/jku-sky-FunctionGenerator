@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+`include "FG_WaveformGen.v"
+`include "FG_synchronizer.v"
+
 module tt_um_FG_TOP (
     input  wire [7:0] ui_in,    // Data inputs
     output wire [7:0] uo_out,   // DAC output data            [7:0]
@@ -36,7 +39,7 @@ wire WR_enable;
 reg [7:0] CR0, CR1, CR2, CR3, CR4, CR5, CR6, CR7;
 wire [63:0] CR_bus;
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
   if (!rst_n) begin
     // async reset
     CR0 <= 8'h00; CR1 <= 8'h00; CR2 <= 8'h00; CR3 <= 8'h00;
@@ -80,7 +83,7 @@ FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .
     .outputEnable_i (enable_i),
 
     .CR_bus_i (CR_bus),
-    .out_o (uo_out),
+    .out_o (dac_o),
     .outValid_STRB_o(d_Valid_STRB)
 );       
 
@@ -88,7 +91,7 @@ FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .
 wire d_Valid_STRB;
 reg d_Valid_STRB_reg;
 
-always @(posedge clk, negedge rst_n) begin
+always @(posedge clk) begin
 
    if (!rst_n) begin
         d_Valid_STRB_reg <= 1'b0;
@@ -102,6 +105,15 @@ assign uio_out[1] = rst_n; // dac_clr_o clear / resets the DAC
 assign uio_out[2] = 1'd1; // dac_pd_o // disable power down mode
 assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write data
 
+// settling time of DAC > 10 us -> 100 kHz -> Prescaler of 500 (with a 50 MHz clock)
+//localparam [15:0] prescaler_100kHz = 499; // 500 - 1
+//assign PSC = prescaler_100kHz;
+
+//localparam RADIX_UNSIGNED = 1'b1;
+//assign Radix = RADIX_UNSIGNED;
+
+//localparam real VDD = 3.3;
+///localparam real voltage__digit =  (2**BITWIDTH - 1) / VDD;
+//localparam real CORDIC_GAIN = 1.647;
+
 endmodule
-
-

@@ -38,7 +38,7 @@ assign out_o = val;
 
 // ----------------------- LOAD REGISTERS ----------------------- //
 
-always @(posedge clk_i, negedge rstn_i) begin
+always @(posedge clk_i) begin
     if (!rstn_i) begin
         counter <= 0;
         ON_counter <= 0;
@@ -58,7 +58,7 @@ end
 
 // ----------------------- FSM ----------------------- //
 
-always @(posedge clk_i, negedge rstn_i) begin
+always @(posedge clk_i) begin
     if (!rstn_i) begin
         state <= IDLE;
 
@@ -107,7 +107,7 @@ end
 wire signed [WAVEFORM_BITWIDTH:0] delta_step;
 assign delta_step = val + ((state == RISE)? k_rise : -k_fall);
 
-always @(posedge clk_i, negedge rstn_i) begin
+always @(posedge clk_i) begin
     if (!rstn_i) begin
         val <= 0;
     end else if(clk_en_i) begin

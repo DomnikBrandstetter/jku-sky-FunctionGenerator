@@ -37,7 +37,7 @@ reg [PSC_BITWIDTH-1:0] PSC, PSC_Value;
 assign clk_en = (PSC_Value == PSC)? 1'b1 : 1'b0;
 
 //set up prescaler
-always @(posedge clk_i, negedge rstn_i) begin
+always @(posedge clk_i) begin
     if (!rstn_i) begin
         PSC <= 0;
     end else if (PSC_Value == 0 && prescaler_i > MIN_PSC[PSC_BITWIDTH-1:0]) begin
@@ -48,7 +48,7 @@ always @(posedge clk_i, negedge rstn_i) begin
 end
 
 // CLK-Divider
-always @(posedge clk_i, negedge rstn_i) begin
+always @(posedge clk_i) begin
 
     if (!rstn_i) begin
         PSC_Value <= 0;
@@ -85,7 +85,7 @@ assign counterPreload = (COUNTER_BITWIDTH > PRELOAD_BITWIDTH)? {{(COUNTER_BITWID
                             preload[(PRELOAD_BITWIDTH-COUNTER_BITWIDTH)+COUNTER_BITWIDTH-1:(PRELOAD_BITWIDTH-COUNTER_BITWIDTH)];
 
 // configuration state machine
-always @(posedge clk_i, negedge rstn_i) begin
+always @(posedge clk_i) begin
     if (!rstn_i) begin
         state <= INIT;
 
@@ -107,7 +107,7 @@ always @(posedge clk_i, negedge rstn_i) begin
 end
 
 //set up timer configuration
-always @(posedge clk_i, negedge rstn_i) begin
+always @(posedge clk_i) begin
     if (!rstn_i) begin
         enable <= 0;
         timerMode <= 0;
@@ -121,7 +121,7 @@ always @(posedge clk_i, negedge rstn_i) begin
     end 
 end
 // timer
-always @(posedge clk_i, negedge rstn_i) begin
+always @(posedge clk_i) begin
 
     if (!rstn_i) begin
         counterValue <= 0;

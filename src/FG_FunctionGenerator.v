@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+`include "FG_Timer.v"
+`include "FG_Cordic.v"
+`include "FG_WaveformGen.v"
+`include "FG_Limiter.v"
+
 module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_TIMER = 10, CONFIG_REG_BITWIDTH = 64, OUT_STROBE_DELAY = 0)(
     input wire clk_i,
     input wire rstn_i,
@@ -87,7 +92,6 @@ assign offset = CR_bus_i[OFFSET_POS+OFFSET_BITWIDTH-1:OFFSET_POS];
 
 wire rst_n;
 assign rst_n = rstn_i;
-
 // ----------------------- TIMER ----------------------- //
 
 // is used to perform timer functions -> time base
@@ -208,6 +212,5 @@ assign out_signed = out;
 assign out_unsigned = out + SIGNED_TO_UNSIGNED[BITWIDTH-1:0];
 
 assign out_o = Radix? out_unsigned : out_signed;
-
 
 endmodule
