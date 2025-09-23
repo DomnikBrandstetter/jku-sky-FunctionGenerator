@@ -72,9 +72,6 @@ FG_Synchronizer #(.STAGES (SYNC_STAGES)) SW_Enable(
     .sync_o (WR_enable)
 );
 
-// LED
-uio_out[0] = 1'd1; // ON LED
-
 // ----------------------- FUNCTION GENERATOR ----------------------- //
 
 FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .CONFIG_REG_BITWIDTH(CONFIG_REG_BITWIDTH), .OUT_STROBE_DELAY (WR_STROBE_DELAY)) FG(
@@ -89,11 +86,7 @@ FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .
     .CR_5_i (CR_5),
     .out_o (dac_o),
     .outValid_STRB_o(d_Valid_STRB)
-);
-
-//DAC
-assign dac_clr_o = rst_n;       // clear / resets the DAC
-assign dac_pd_o = 1'b1;         // disable power down mode
+);       
 
 //WR pulse width > 20 ns -> 2 clock cycles are used (40 ns) -> strobes needs to be extended
 wire d_Valid_STRB;
@@ -107,17 +100,8 @@ always @(posedge clk, negedge rst_n) begin
         d_Valid_STRB_reg <= d_Valid_STRB;
 end
 
-assign dac_wr_o = !(d_Valid_STRB || d_Valid_STRB_reg); //write data
-
-// settling time of DAC > 10 us -> 100 kHz -> Prescaler of 500 (with a 50 MHz clock)
-//localparam [15:0] prescaler_100kHz = 499; // 500 - 1
-//assign PSC = prescaler_100kHz;
-
-//localparam RADIX_UNSIGNED = 1'b1;
-//assign Radix = RADIX_UNSIGNED;
-
-//localparam real VDD = 3.3;
-///localparam real voltage__digit =  (2**BITWIDTH - 1) / VDD;
-//localparam real CORDIC_GAIN = 1.647;
-
-endmodule
+// LED
+assign uio_out[0] = 1'd1; // ON LED
+assign uio_out[1] = rst_n; // dac_clr_o clear / resets the DAC
+assign uio_out[2] = 1'd1; // dac_pd_o // disable power down mode
+assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write data
