@@ -68,7 +68,7 @@ assign quadrant = phase_i[BITWIDTH_PHASE-1:BITWIDTH_PHASE-2];
 assign cosine_o = x[BITWIDTH-1];
 assign sine_o = y[BITWIDTH-1];
 
-always @(posedge clk_i, negedge rstn_i) begin
+always @(posedge clk_i) begin
 
    if (!rstn_i) begin
         x[0] <= 0;
@@ -137,5 +137,6 @@ generate
         end
     end
 endgenerate
+
 
 endmodule
