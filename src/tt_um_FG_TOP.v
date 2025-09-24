@@ -104,6 +104,10 @@ assign uio_out[0] = 1'd1; // ON LED
 assign uio_out[1] = rst_n; // dac_clr_o clear / resets the DAC
 assign uio_out[2] = 1'd1; // dac_pd_o // disable power down mode
 assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write data
+assign uio_out[4] = 1'd0;
+assign uio_out[5] = 1'd0;
+assign uio_out[6] = 1'd0;
+assign uio_out[7] = 1'd0;
 
 // settling time of DAC > 10 us -> 100 kHz -> Prescaler of 500 (with a 50 MHz clock)
 //localparam [15:0] prescaler_100kHz = 499; // 500 - 1
@@ -116,8 +120,4 @@ assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write da
 ///localparam real voltage__digit =  (2**BITWIDTH - 1) / VDD;
 //localparam real CORDIC_GAIN = 1.647;
 
-
 endmodule
-
-
-

@@ -117,7 +117,7 @@ generate
         assign x_ssr = x[i] >>> i; 
         assign y_ssr = y[i] >>> i; 
 
-        always @(posedge clk_i, negedge rstn_i)
+        always @(posedge clk_i)
         begin
             if (!rstn_i) begin
                 x[i+1] <= 0;
@@ -137,6 +137,5 @@ generate
         end
     end
 endgenerate
-
 
 endmodule

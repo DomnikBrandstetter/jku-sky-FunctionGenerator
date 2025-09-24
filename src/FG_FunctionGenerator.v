@@ -121,7 +121,7 @@ reg outValid_STRB_shiftreg [OUT_STROBE_DELAY:0];
 
 genvar i;
 
-always @ (posedge clk_i, negedge rst_n)
+always @ (posedge clk_i)
 begin
     if (!rst_n) begin
         outValid_STRB_shiftreg[0] <= 1'b0;
@@ -133,7 +133,7 @@ end
 generate
     for (i = 0; i < OUT_STROBE_DELAY; i = i + 1)
     begin: shiftreg
-        always @ (posedge clk_i, negedge rst_n)
+        always @ (posedge clk_i)
         begin
             if (!rst_n) begin
                 outValid_STRB_shiftreg[i+1] <= 1'b0;
