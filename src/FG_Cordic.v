@@ -68,74 +68,72 @@ assign quadrant = phase_i[BITWIDTH_PHASE-1:BITWIDTH_PHASE-2];
 assign cosine_o = x[BITWIDTH-1];
 assign sine_o = y[BITWIDTH-1];
 
+// Assumptions:
+// - SystemVerilog/Verilog-2001
+// - x[], y[] are signed [BITWIDTH:0]; phase[] is [BITWIDTH_PHASE-1:0]
+// - atan_table[i] matches phase width
+// - clk_en_i is a clock-enable (optional gating)
+
+integer k;
+reg        sign;
+reg signed [BITWIDTH:0] x_ssr, y_ssr;
+
 always @(posedge clk_i) begin
+  // synchronous reset (use negedge in sensitivity if you need async)
+  if (!rstn_i) begin
+    for (k = 0; k < BITWIDTH; k = k + 1) begin
+      x[k]     <= '0;
+      y[k]     <= '0;
+      phase[k] <= '0;
+    end
+  end else if (clk_en_i) begin
+    // ---------------- Stage 0 load (quadrant handling) ----------------
+    case (quadrant)
+      2'b00, 2'b11: begin
+        // sign-extend 8->9 (example) – adjust if BITWIDTH differs
+        x[0]     <= {{1{x_initial_i[BITWIDTH-1]}}, x_initial_i};
+        y[0]     <= {{1{y_initial_i[BITWIDTH-1]}}, y_initial_i};
+        phase[0] <= phase_i;
+      end
 
-   if (!rstn_i) begin
-        x[0] <= 0;
-        y[0] <= 0;
-        phase[0] <= 0;
+      2'b01: begin // subtract pi/2
+        x[0]     <= -{{1{y_initial_i[BITWIDTH-1]}}, y_initial_i};
+        y[0]     <=  {{1{x_initial_i[BITWIDTH-1]}}, x_initial_i};
+        phase[0] <= {2'b00, phase_i[BITWIDTH_PHASE-3:0]};
+      end
 
-   end else if (clk_en_i) begin
-        case(quadrant)
-            2'b00,
-            2'b11: // no changes
-            begin
-                x[0] <= {{{(1){x_initial_i[BITWIDTH-1]}}}, x_initial_i};
-                y[0] <= {{{(1){y_initial_i[BITWIDTH-1]}}}, y_initial_i};;
-                phase[0] <= phase_i;
-            end
+      2'b10: begin // add pi/2
+        x[0]     <=  {{1{y_initial_i[BITWIDTH-1]}}, y_initial_i};
+        y[0]     <= -{{1{x_initial_i[BITWIDTH-1]}}, x_initial_i};
+        phase[0] <= {2'b11, phase_i[BITWIDTH_PHASE-3:0]};
+      end
+      default: begin
+        x[0]     <= {{1{x_initial_i[BITWIDTH-1]}}, x_initial_i};
+        y[0]     <= {{1{y_initial_i[BITWIDTH-1]}}, y_initial_i};
+        phase[0] <= phase_i;
+      end
+    endcase
 
-            2'b01: // subtract pi/2
-            begin
-                x[0] <= -{{{(1){y_initial_i[BITWIDTH-1]}}}, y_initial_i};;
-                y[0] <= {{{(1){x_initial_i[BITWIDTH-1]}}}, x_initial_i};
-                phase[0] <= {2'b00, phase_i[BITWIDTH_PHASE-3:0]}; 
-            end
+    // ---------------- Iterative CORDIC pipeline ----------------
+    for (k = 0; k < BITWIDTH-1; k = k + 1) begin
+      // derive sign and arithmetic right shifts from current stage values
+      sign = phase[k][BITWIDTH_PHASE-1];
+      x_ssr = $signed(x[k]) >>> k;
+      y_ssr = $signed(y[k]) >>> k;
 
-            2'b10: // add pi/2
-            begin
-                x[0] <= {{{(1){y_initial_i[BITWIDTH-1]}}}, y_initial_i};
-                y[0] <= -{{{(1){x_initial_i[BITWIDTH-1]}}}, x_initial_i};
-                phase[0] <= {2'b11, phase_i[BITWIDTH_PHASE-3:0]};
-            end 
-        endcase
-   end
+      if (sign) begin
+        x[k+1]     <= x[k] + y_ssr;
+        y[k+1]     <= y[k] - x_ssr;
+        phase[k+1] <= phase[k] + atan_table[k];
+      end else begin
+        x[k+1]     <= x[k] - y_ssr;
+        y[k+1]     <= y[k] + x_ssr;
+        phase[k+1] <= phase[k] - atan_table[k];
+      end
+    end
+  end
 end
 
-// ----------------------- GENERATE ITERATIONS ----------------------- //
 
-generate
-    for (i = 0; i < (BITWIDTH-1); i = i + 1)
-    begin: cordic_iterations
-        wire sign;
-        wire signed [BITWIDTH:0] x_ssr, y_ssr;
-
-        //sign of the current phase
-        assign sign = phase[i][BITWIDTH_PHASE-1];
-        
-        // signed shift right
-        assign x_ssr = x[i] >>> i; 
-        assign y_ssr = y[i] >>> i; 
-
-        always @(posedge clk_i)
-        begin
-            if (!rstn_i) begin
-                x[i+1] <= 0;
-                y[i+1] <= 0;
-                phase[i+1] <= 0;
-
-            end else if (clk_en_i && sign) begin
-                x[i+1] <= x[i] + y_ssr;
-                y[i+1] <= y[i] - x_ssr;
-                phase[i+1] <= phase[i] + atan_table[i];
-
-            end else if (clk_en_i && !sign) begin
-                x[i+1] <= x[i] - y_ssr;
-                y[i+1] <= y[i] + x_ssr;
-                phase[i+1] <= phase[i] - atan_table[i];
-            end
-        end
-    end
-endgenerate
 
 endmodule
