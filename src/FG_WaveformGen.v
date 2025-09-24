@@ -38,23 +38,26 @@ assign out_o = val;
 
 // ----------------------- LOAD REGISTERS ----------------------- //
 
-always @(posedge clk_i) begin
-    if (!rstn_i) begin
-        counter <= 0;
-        ON_counter <= 0;
-        k_rise <= 0;
-        k_fall <= 0;
-        amplitude <= 0;
-    end else if(clk_en_i) begin
-        if(CR_i == 0) begin
-            counter <= counter_i;
-            ON_counter <= ON_counter_i;
-            k_rise <= k_rise_i;
-            k_fall <= k_fall_i;
-            amplitude <= {{{WAVEFORM_BITWIDTH-(WAVEFORM_BITWIDTH-1){1'b0}}}, amplitude_i};
-        end
-    end 
-end
+// always @(posedge clk_i) begin
+//     if (!rstn_i) begin
+//         counter <= 0;
+//         ON_counter <= 0;
+//         k_rise <= 0;
+//         k_fall <= 0;
+//         amplitude <= 0;
+//     end else if(clk_en_i) begin
+//         if(CR_i == 0) begin
+//             counter <= counter_i;
+//             ON_counter <= ON_counter_i;
+//             k_rise <= k_rise_i;
+//             k_fall <= k_fall_i;
+//             amplitude <= {{{WAVEFORM_BITWIDTH-(WAVEFORM_BITWIDTH-1){1'b0}}}, amplitude_i};
+//         end
+//     end 
+// end
+
+assign k_rise = k_rise_i;
+assign k_fall = k_fall_i;
 
 // ----------------------- FSM ----------------------- //
 
@@ -146,4 +149,3 @@ end
 // end
 
 endmodule
-
