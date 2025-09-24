@@ -58,84 +58,91 @@ end
 
 // ----------------------- FSM ----------------------- //
 
-always @(posedge clk_i) begin
-    if (!rstn_i) begin
-        state <= IDLE;
+// always @(posedge clk_i) begin
+//     if (!rstn_i) begin
+//         state <= IDLE;
 
-    end else if(clk_en_i) begin
-        case(state)
-        IDLE: begin
-            if(CR_i == 0) begin
-                state <= RISE;
-            end
-        end 
-        RISE: begin
-            if(CR_i != ON_counter) begin
-                if(val == amplitude) begin
-                    state <= ON;
-                end else if(CR_i == counter) begin
-                    state <= IDLE;
-                end
-            end else if(CR_i == ON_counter) begin
-                state <= FALL;
-            end
-        end
-        ON: begin
-            if(CR_i != 0) begin
-                if(CR_i == ON_counter) begin
-                    state <= FALL;
-                end
-            end else if(CR_i == 0) begin
-                state <= RISE;
-            end
-        end
-        FALL: begin
-            if(CR_i != 0) begin
-                if(val == 0) begin
-                    state <= IDLE;
-                end
-            end else if(CR_i == 0) begin
-                state <= RISE;
-            end
-        end
-        default: state <= IDLE;
-        endcase
-    end
-end
+//     end else if(clk_en_i) begin
+//         case(state)
+//         IDLE: begin
+//             if(CR_i == 0) begin
+//                 state <= RISE;
+//             end
+//         end 
+//         RISE: begin
+//             if(CR_i != ON_counter) begin
+//                 if(val == amplitude) begin
+//                     state <= ON;
+//                 end else if(CR_i == counter) begin
+//                     state <= IDLE;
+//                 end
+//             end else if(CR_i == ON_counter) begin
+//                 state <= FALL;
+//             end
+//         end
+//         ON: begin
+//             if(CR_i != 0) begin
+//                 if(CR_i == ON_counter) begin
+//                     state <= FALL;
+//                 end
+//             end else if(CR_i == 0) begin
+//                 state <= RISE;
+//             end
+//         end
+//         FALL: begin
+//             if(CR_i != 0) begin
+//                 if(val == 0) begin
+//                     state <= IDLE;
+//                 end
+//             end else if(CR_i == 0) begin
+//                 state <= RISE;
+//             end
+//         end
+//         default: state <= IDLE;
+//         endcase
+//     end
+// end
 
 // used to force the use of only one adder
 wire signed [WAVEFORM_BITWIDTH:0] delta_step;
-assign delta_step = val + 1; //((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
+assign delta_step = val + ((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
 
 always @(posedge clk_i) begin
     if (!rstn_i) begin
         val <= 0;
     end else if(clk_en_i) begin
-        case(state)
-            IDLE: begin
-                val <= 0; 
-            end 
-            RISE: begin
-                if(delta_step <= amplitude && delta_step >= 0) begin
-                    val <= delta_step;
-                end else begin
-                    val <= amplitude;
-                end
-            end
-            ON: begin
-                val <= amplitude;
-            end
-            FALL: begin
-                if(delta_step >= 0) begin
-                    val <= delta_step;
-                end else begin
-                    val <= 0;
-                end
-            end
-            default: state <= IDLE;
-        endcase
+        val <= delta_step
     end
 end
 
+// always @(posedge clk_i) begin
+//     if (!rstn_i) begin
+//         val <= 0;
+//     end else if(clk_en_i) begin
+//         case(state)
+//             IDLE: begin
+//                 val <= 0; 
+//             end 
+//             RISE: begin
+//                 if(delta_step <= amplitude && delta_step >= 0) begin
+//                     val <= delta_step;
+//                 end else begin
+//                     val <= amplitude;
+//                 end
+//             end
+//             ON: begin
+//                 val <= amplitude;
+//             end
+//             FALL: begin
+//                 if(delta_step >= 0) begin
+//                     val <= delta_step;
+//                 end else begin
+//                     val <= 0;
+//                 end
+//             end
+//             default: state <= IDLE;
+//         endcase
+//     end
+// end
 
 endmodule
