@@ -103,32 +103,39 @@ always @(posedge clk_i) begin
     end
 end
 
-// delta_step now computed inside the clocked process (no ternary)
-reg signed [WAVEFORM_BITWIDTH:0] delta_step; // one bit wider for safe add/sub
+// Assumes: clk_i, rstn_i, clk_en_i, state, IDLE/RISE/ON/FALL,
+//          val, amplitude, k_rise, k_fall are declared elsewhere.
+
+// Use one extra bit for intermediate math
+reg  signed [WAVEFORM_BITWIDTH:0] delta_step;         // +1 bit for overflow headroom
+wire signed [WAVEFORM_BITWIDTH:0] amplitude_s = {1'b0, amplitude}; // amplitude is non-negative
 
 always @(posedge clk_i) begin
     if (!rstn_i) begin
-        val        <= { (WAVEFORM_BITWIDTH){1'b0} };
-        delta_step <= { (WAVEFORM_BITWIDTH+1){1'b0} };
+        val        <= {WAVEFORM_BITWIDTH{1'b0}};
+        delta_step <= {WAVEFORM_BITWIDTH+1{1'b0}};
     end else if (clk_en_i) begin
-        // Compute delta_step (use blocking for the temp so it's available below)
+        // --- Compute delta_step without $signed (explicit sign extension) ---
         if (state == RISE) begin
-            // val + sign-extended k_rise
-            delta_step = $signed({1'b0, val}) + $signed({{1{k_rise[WAVEFORM_BITWIDTH-1]}}, k_rise});
+            // delta_step = val + k_rise
+            // explicit sign-extension to WAVEFORM_BITWIDTH+1
+            delta_step = {val[WAVEFORM_BITWIDTH-1], val}
+                       + {k_rise[WAVEFORM_BITWIDTH-1], k_rise};
         end else begin
-            // val - sign-extended k_fall
-            delta_step = $signed({1'b0, val}) - $signed({{1{k_fall[WAVEFORM_BITWIDTH-1]}}, k_fall});
+            // delta_step = val - k_fall
+            delta_step = {val[WAVEFORM_BITWIDTH-1], val}
+                       - {k_fall[WAVEFORM_BITWIDTH-1], k_fall};
         end
 
-        // Update val based on state and clamping rules
+        // --- Update val with clamping rules ---
         case (state)
             IDLE: begin
-                val <= { (WAVEFORM_BITWIDTH){1'b0} };
+                val <= {WAVEFORM_BITWIDTH{1'b0}};
             end
 
             RISE: begin
                 // clamp to [0, amplitude]
-                if ((delta_step >= 0) && (delta_step <= $signed({1'b0, amplitude}))) begin
+                if ((delta_step >= 0) && (delta_step <= amplitude_s)) begin
                     val <= delta_step[WAVEFORM_BITWIDTH-1:0];
                 end else begin
                     val <= amplitude;
@@ -144,7 +151,7 @@ always @(posedge clk_i) begin
                 if (delta_step >= 0) begin
                     val <= delta_step[WAVEFORM_BITWIDTH-1:0];
                 end else begin
-                    val <= { (WAVEFORM_BITWIDTH){1'b0} };
+                    val <= {WAVEFORM_BITWIDTH{1'b0}};
                 end
             end
 
@@ -152,6 +159,7 @@ always @(posedge clk_i) begin
         endcase
     end
 end
+
 
 
 // used to force the use of only one adder
