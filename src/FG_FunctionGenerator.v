@@ -152,19 +152,22 @@ localparam [BITWIDTH-1:0] Y_INITIAL = 0;
 localparam BITWIDTH_CORDIC_TAN = TIMER_COUNTER_BITWIDTH;
 wire signed [BITWIDTH:0] sine, cosine;
 
-FG_Cordic #(.BITWIDTH (BITWIDTH), .BITWIDTH_PHASE (BITWIDTH_CORDIC_TAN)) Cordic(
-    .clk_i (clk_i),
-    .rstn_i (rstn__configRST),
-    .clk_en_i (clk_en),
+// FG_Cordic #(.BITWIDTH (BITWIDTH), .BITWIDTH_PHASE (BITWIDTH_CORDIC_TAN)) Cordic(
+//     .clk_i (clk_i),
+//     .rstn_i (rstn__configRST),
+//     .clk_en_i (clk_en),
    
-    // Interface
-    .phase_i (counterValue),
-    .x_initial_i  (amplitude), 
-    .y_initial_i (Y_INITIAL),
+//     // Interface
+//     .phase_i (counterValue),
+//     .x_initial_i  (amplitude), 
+//     .y_initial_i (Y_INITIAL),
     
-    .cosine_o (cosine),
-    .sine_o  (sine)
-);
+//     .cosine_o (cosine),
+//     .sine_o  (sine)
+// );
+
+assign sine = 0;
+assign cosine = 0;
 
 // ----------------------- WAVEFORM ----------------------- //
 
