@@ -38,83 +38,89 @@ assign out_o = val;
 
 // ----------------------- LOAD REGISTERS ----------------------- //
 
-// always @(posedge clk_i) begin
-//     if (!rstn_i) begin
-//         counter <= 0;
-//         ON_counter <= 0;
-//         k_rise <= 0;
-//         k_fall <= 0;
-//         amplitude <= 0;
-//     end else if(clk_en_i) begin
-//         if(CR_i == 0) begin
-//             counter <= counter_i;
-//             ON_counter <= ON_counter_i;
-//             k_rise <= k_rise_i;
-//             k_fall <= k_fall_i;
-//             amplitude <= {{{WAVEFORM_BITWIDTH-(WAVEFORM_BITWIDTH-1){1'b0}}}, amplitude_i};
-//         end
-//     end 
-// end
+always @(posedge clk_i) begin
+    if (!rstn_i) begin
+        counter <= 0;
+        ON_counter <= 0;
+        k_rise <= 0;
+        k_fall <= 0;
+        amplitude <= 0;
+    end else if(clk_en_i) begin
+        if(CR_i == 0) begin
+            counter <= counter_i;
+            ON_counter <= ON_counter_i;
+            k_rise <= k_rise_i;
+            k_fall <= k_fall_i;
+            amplitude <= {{{WAVEFORM_BITWIDTH-(WAVEFORM_BITWIDTH-1){1'b0}}}, amplitude_i};
+        end
+    end 
+end
 
-//assign k_rise = k_rise_i;
-//assign k_fall = k_fall_i;
+// assign k_rise = k_rise_i;
+// assign k_fall = k_fall_i;
 
 // ----------------------- FSM ----------------------- //
 
-// always @(posedge clk_i) begin
-//     if (!rstn_i) begin
-//         state <= IDLE;
+always @(posedge clk_i) begin
+    if (!rstn_i) begin
+        state <= IDLE;
 
-//     end else if(clk_en_i) begin
-//         case(state)
-//         IDLE: begin
-//             if(CR_i == 0) begin
-//                 state <= RISE;
-//             end
-//         end 
-//         RISE: begin
-//             if(CR_i != ON_counter) begin
-//                 if(val == amplitude) begin
-//                     state <= ON;
-//                 end else if(CR_i == counter) begin
-//                     state <= IDLE;
-//                 end
-//             end else if(CR_i == ON_counter) begin
-//                 state <= FALL;
-//             end
-//         end
-//         ON: begin
-//             if(CR_i != 0) begin
-//                 if(CR_i == ON_counter) begin
-//                     state <= FALL;
-//                 end
-//             end else if(CR_i == 0) begin
-//                 state <= RISE;
-//             end
-//         end
-//         FALL: begin
-//             if(CR_i != 0) begin
-//                 if(val == 0) begin
-//                     state <= IDLE;
-//                 end
-//             end else if(CR_i == 0) begin
-//                 state <= RISE;
-//             end
-//         end
-//         default: state <= IDLE;
-//         endcase
-//     end
-// end
+    end else if(clk_en_i) begin
+        case(state)
+        IDLE: begin
+            if(CR_i == 0) begin
+                state <= RISE;
+            end
+        end 
+        RISE: begin
+            if(CR_i != ON_counter) begin
+                if(val == amplitude) begin
+                    state <= ON;
+                end else if(CR_i == counter) begin
+                    state <= IDLE;
+                end
+            end else if(CR_i == ON_counter) begin
+                state <= FALL;
+            end
+        end
+        ON: begin
+            if(CR_i != 0) begin
+                if(CR_i == ON_counter) begin
+                    state <= FALL;
+                end
+            end else if(CR_i == 0) begin
+                state <= RISE;
+            end
+        end
+        FALL: begin
+            if(CR_i != 0) begin
+                if(val == 0) begin
+                    state <= IDLE;
+                end
+            end else if(CR_i == 0) begin
+                state <= RISE;
+            end
+        end
+        default: state <= IDLE;
+        endcase
+    end
+end
 
 // used to force the use of only one adder
-wire signed [WAVEFORM_BITWIDTH:0] delta_step;
-assign delta_step = val + 1; //((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
+//wire signed [WAVEFORM_BITWIDTH:0] delta_step;
+//assign delta_step = val + 1; //((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
+
+//assign delta_step = val + ((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
 
 always @(posedge clk_i) begin
     if (!rstn_i) begin
         val <= 0;
     end else if(clk_en_i) begin
-        val <= delta_step;
+        if(state == RISE) begin
+            val <= val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise};
+        end else if(state == ON) begin
+            val <= val - {{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall};
+        end
     end
 end
 
@@ -147,6 +153,5 @@ end
 //         endcase
 //     end
 // end
-
 
 endmodule
