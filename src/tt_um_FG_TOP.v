@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-`include "FG_WaveformGen.v"
+`include "FG_FunctionGenerator.v"
 `include "FG_synchronizer.v"
 
 module tt_um_FG_TOP (
@@ -118,3 +118,4 @@ assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write da
 
 
 endmodule
+
