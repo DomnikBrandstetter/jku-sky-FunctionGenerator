@@ -82,7 +82,7 @@ FG_Synchronizer #(.STAGES (SYNC_STAGES)) SW_Enable(
 // ----------------------- FUNCTION GENERATOR ----------------------- //
 
 assign uo_out = CR0;
-assign d_Valid_STRB = CR1(0);
+assign d_Valid_STRB = CR1[0];
 
 // FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .CONFIG_REG_BITWIDTH(CONFIG_REG_BITWIDTH), .OUT_STROBE_DELAY (WR_STROBE_DELAY)) FG(
 //     .clk_i (clk),
