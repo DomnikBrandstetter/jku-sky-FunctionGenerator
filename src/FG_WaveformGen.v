@@ -56,9 +56,6 @@ always @(posedge clk_i) begin
     end 
 end
 
-// assign k_rise = k_rise_i;
-// assign k_fall = k_fall_i;
-
 // ----------------------- FSM ----------------------- //
 
 always @(posedge clk_i) begin
@@ -106,23 +103,74 @@ always @(posedge clk_i) begin
     end
 end
 
+// delta_step now computed inside the clocked process (no ternary)
+reg signed [WAVEFORM_BITWIDTH:0] delta_step; // one bit wider for safe add/sub
+
+always @(posedge clk_i) begin
+    if (!rstn_i) begin
+        val        <= { (WAVEFORM_BITWIDTH){1'b0} };
+        delta_step <= { (WAVEFORM_BITWIDTH+1){1'b0} };
+    end else if (clk_en_i) begin
+        // Compute delta_step (use blocking for the temp so it's available below)
+        if (state == RISE) begin
+            // val + sign-extended k_rise
+            delta_step = $signed({1'b0, val}) + $signed({{1{k_rise[WAVEFORM_BITWIDTH-1]}}, k_rise});
+        end else begin
+            // val - sign-extended k_fall
+            delta_step = $signed({1'b0, val}) - $signed({{1{k_fall[WAVEFORM_BITWIDTH-1]}}, k_fall});
+        end
+
+        // Update val based on state and clamping rules
+        case (state)
+            IDLE: begin
+                val <= { (WAVEFORM_BITWIDTH){1'b0} };
+            end
+
+            RISE: begin
+                // clamp to [0, amplitude]
+                if ((delta_step >= 0) && (delta_step <= $signed({1'b0, amplitude}))) begin
+                    val <= delta_step[WAVEFORM_BITWIDTH-1:0];
+                end else begin
+                    val <= amplitude;
+                end
+            end
+
+            ON: begin
+                val <= amplitude;
+            end
+
+            FALL: begin
+                // clamp to [0, ...]
+                if (delta_step >= 0) begin
+                    val <= delta_step[WAVEFORM_BITWIDTH-1:0];
+                end else begin
+                    val <= { (WAVEFORM_BITWIDTH){1'b0} };
+                end
+            end
+
+            default: state <= IDLE;
+        endcase
+    end
+end
+
+
 // used to force the use of only one adder
 //wire signed [WAVEFORM_BITWIDTH:0] delta_step;
 //assign delta_step = val + 1; //((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
 
 //assign delta_step = val + ((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
 
-always @(posedge clk_i) begin
-    if (!rstn_i) begin
-        val <= 0;
-    end else if(clk_en_i) begin
-        if(state == RISE) begin
-            val <= val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise};
-        end else if(state == ON) begin
-            val <= val - {{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall};
-        end
-    end
-end
+// always @(posedge clk_i) begin
+//     if (!rstn_i) begin
+//         val <= 0;
+//     end else if(clk_en_i) begin
+//         if(state == RISE) begin
+//             val <= val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise};
+//         end else if(state == ON) begin
+//             val <= val - {{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall};
+//         end
+//     end
+// end
 
 // always @(posedge clk_i) begin
 //     if (!rstn_i) begin
