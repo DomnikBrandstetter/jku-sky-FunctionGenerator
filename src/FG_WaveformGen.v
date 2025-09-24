@@ -105,7 +105,7 @@ end
 
 // used to force the use of only one adder
 wire signed [WAVEFORM_BITWIDTH:0] delta_step;
-assign delta_step = val + ((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
+assign delta_step = val + 1; //((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
 
 always @(posedge clk_i) begin
     if (!rstn_i) begin
@@ -136,5 +136,6 @@ always @(posedge clk_i) begin
         endcase
     end
 end
+
 
 endmodule
