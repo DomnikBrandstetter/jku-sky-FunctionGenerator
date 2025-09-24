@@ -173,22 +173,22 @@ FG_Cordic #(.BITWIDTH (BITWIDTH), .BITWIDTH_PHASE (BITWIDTH_CORDIC_TAN)) Cordic(
 
 wire signed [BITWIDTH:0] waveform;
 
-FG_WaveformGen #(.COUNTER_BITWIDTH (TIMER_COUNTER_BITWIDTH), .WAVEFORM_BITWIDTH(BITWIDTH)) Wave(
-    .clk_i (clk_i),
-    .rstn_i (rstn__configRST),
-    .clk_en_i (clk_en),
+// FG_WaveformGen #(.COUNTER_BITWIDTH (TIMER_COUNTER_BITWIDTH), .WAVEFORM_BITWIDTH(BITWIDTH)) Wave(
+//     .clk_i (clk_i),
+//     .rstn_i (rstn__configRST),
+//     .clk_en_i (clk_en),
 
-    .counter_i (timerCounter), 
-    .ON_counter_i (initPhase___ON_counter), 
-    .k_rise_i (k_rise),
-    .k_fall_i (k_fall),
-    .amplitude_i (amplitude),
+//     .counter_i (timerCounter), 
+//     .ON_counter_i (initPhase___ON_counter), 
+//     .k_rise_i (k_rise),
+//     .k_fall_i (k_fall),
+//     .amplitude_i (amplitude),
 
-   .CR_i (counterValue),
-   .out_o (waveform) 
-);
+//    .CR_i (counterValue),
+//    .out_o (waveform) 
+// );
 
-//assign waveform = 0;
+assign waveform = cosine;
 
 // ----------------------- LIMITER ----------------------- //
 
@@ -220,4 +220,5 @@ assign out_o = Radix? out_unsigned : out_signed;
 
 
 endmodule
+
 
