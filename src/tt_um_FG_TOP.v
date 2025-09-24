@@ -81,18 +81,18 @@ FG_Synchronizer #(.STAGES (SYNC_STAGES)) SW_Enable(
 
 // ----------------------- FUNCTION GENERATOR ----------------------- //
 
-assign uo_out = CR0;
-assign d_Valid_STRB = CR1[0];
+// assign uo_out = CR0;
+// assign d_Valid_STRB = CR1[0];
 
-// FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .CONFIG_REG_BITWIDTH(CONFIG_REG_BITWIDTH), .OUT_STROBE_DELAY (WR_STROBE_DELAY)) FG(
-//     .clk_i (clk),
-//     .rstn_i (rst_n),
-//     .outputEnable_i (enable_i),
+FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .CONFIG_REG_BITWIDTH(CONFIG_REG_BITWIDTH), .OUT_STROBE_DELAY (WR_STROBE_DELAY)) FG(
+    .clk_i (clk),
+    .rstn_i (rst_n),
+    .outputEnable_i (enable_i),
 
-//     .CR_bus_i (CR_bus),
-//     .out_o (uo_out),
-//     .outValid_STRB_o(d_Valid_STRB)
-// );       
+    .CR_bus_i (CR_bus),
+    .out_o (uo_out),
+    .outValid_STRB_o(d_Valid_STRB)
+);       
 
 
 always @(posedge clk) begin
