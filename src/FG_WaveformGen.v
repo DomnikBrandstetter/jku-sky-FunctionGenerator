@@ -111,7 +111,7 @@ always @(posedge clk_i) begin
     if (!rstn_i) begin
         val <= 0;
     end else if(clk_en_i) begin
-        val <= delta_step
+        val <= delta_step;
     end
 end
 
@@ -146,3 +146,4 @@ end
 // end
 
 endmodule
+
