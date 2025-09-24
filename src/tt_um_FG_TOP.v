@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+`default_nettype none
+
 `include "FG_FunctionGenerator.v"
 `include "FG_synchronizer.v"
 
@@ -121,5 +123,6 @@ assign uio_out[7] = 1'd0;
 //localparam real VDD = 3.3;
 ///localparam real voltage__digit =  (2**BITWIDTH - 1) / VDD;
 //localparam real CORDIC_GAIN = 1.647;
+
 
 endmodule
