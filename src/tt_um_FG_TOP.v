@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-`default_nettype none
-
 `include "FG_FunctionGenerator.v"
 `include "FG_synchronizer.v"
 
@@ -28,68 +26,63 @@ module tt_um_FG_TOP (
     input  wire       rst_n     // reset_n - low to reset
 );
 
-  // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-  assign uio_out = 0;
-  assign uio_oe  = 0;
+localparam BITWIDTH = 8;
+localparam BITWIDTH_TIMER = 10;
+localparam CONFIG_REG_BITWIDTH = 64;
+localparam SYNC_STAGES = 2;
+localparam WR_STROBE_DELAY = 1;
 
-  // List all unused inputs to prevent warnings
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+// ----------------------- CONFIGURATION REGISTER ----------------------- //
 
-// localparam BITWIDTH = 8;
-// localparam BITWIDTH_TIMER = 10;
-// localparam CONFIG_REG_BITWIDTH = 64;
-// localparam SYNC_STAGES = 2;
-// localparam WR_STROBE_DELAY = 1;
+// 8x 8-bit config registers, no array
+wire WR_enable;
+reg [7:0] CR0, CR1, CR2, CR3, CR4, CR5, CR6, CR7;
+wire [63:0] CR_bus;
 
-// // ----------------------- CONFIGURATION REGISTER ----------------------- //
+always @(posedge clk) begin
+  if (!rst_n) begin
+    // async reset
+    CR0 <= 8'h00; CR1 <= 8'h00; CR2 <= 8'h00; CR3 <= 8'h00;
+    CR4 <= 8'h00; CR5 <= 8'h00; CR6 <= 8'h00; CR7 <= 8'h00;
+  end else if (WR_enable) begin
+    // write selected register
+    case (uio_in[6:4])            // only 0..7 used
+      3'd0: CR0 <= ui_in;
+      3'd1: CR1 <= ui_in;
+      3'd2: CR2 <= ui_in;
+      3'd3: CR3 <= ui_in;
+      3'd4: CR4 <= ui_in;
+      3'd5: CR5 <= ui_in;
+      3'd6: CR6 <= ui_in;
+      3'd7: CR7 <= ui_in;
+      default: /* no write */;
+    endcase
+  end
+end
 
-// // 8x 8-bit config registers, no array
-// wire WR_enable;
-// reg [7:0] CR0, CR1, CR2, CR3, CR4, CR5, CR6, CR7;
-// wire [63:0] CR_bus;
+assign CR_bus = {CR0, CR1, CR2, CR3, CR4, CR5, CR6, CR7};
+assign uio_oe = 8'b00001111; // upper 4 bits input (Adress input), lower 4 bits output (DAC control signals)
 
-// always @(posedge clk) begin
-//   if (!rst_n) begin
-//     // async reset
-//     CR0 <= 8'h00; CR1 <= 8'h00; CR2 <= 8'h00; CR3 <= 8'h00;
-//     CR4 <= 8'h00; CR5 <= 8'h00; CR6 <= 8'h00; CR7 <= 8'h00;
-//   end else if (WR_enable) begin
-//     // write selected register
-//     case (uio_in[6:4])            // only 0..7 used
-//       3'd0: CR0 <= ui_in;
-//       3'd1: CR1 <= ui_in;
-//       3'd2: CR2 <= ui_in;
-//       3'd3: CR3 <= ui_in;
-//       3'd4: CR4 <= ui_in;
-//       3'd5: CR5 <= ui_in;
-//       3'd6: CR6 <= ui_in;
-//       3'd7: CR7 <= ui_in;
-//       default: /* no write */;
-//     endcase
-//   end
-// end
+//WR pulse width > 20 ns -> 2 clock cycles are used (40 ns) -> strobes needs to be extended
+wire d_Valid_STRB;
+reg d_Valid_STRB_reg;
 
-// assign CR_bus = {CR0, CR1, CR2, CR3, CR4, CR5, CR6, CR7};
-// assign uio_oe = 8'b00001111; // upper 4 bits input (Adress input), lower 4 bits output (DAC control signals)
-
-// //WR pulse width > 20 ns -> 2 clock cycles are used (40 ns) -> strobes needs to be extended
-// wire d_Valid_STRB;
-// reg d_Valid_STRB_reg;
-
-// // ----------------------- SYNCHRONIZER ----------------------- //
+// ----------------------- SYNCHRONIZER ----------------------- //
  
-// wire enable_i;
-// assign enable_i = 1'd1; // always enabled
+wire enable_i;
+assign enable_i = 1'd1; // always enabled
 
-// FG_Synchronizer #(.STAGES (SYNC_STAGES)) SW_Enable(
-//     .clk_i (clk),
-//     .rstn_i (rst_n),       
-//     .async_i (uio_in[7]),      
-//     .sync_o (WR_enable)
-// );
+FG_Synchronizer #(.STAGES (SYNC_STAGES)) SW_Enable(
+    .clk_i (clk),
+    .rstn_i (rst_n),       
+    .async_i (uio_in[7]),      
+    .sync_o (WR_enable)
+);
 
-// // ----------------------- FUNCTION GENERATOR ----------------------- //
+// ----------------------- FUNCTION GENERATOR ----------------------- //
+
+assign uo_out = CR0;
+assign d_Valid_STRB = CR1(0);
 
 // FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .CONFIG_REG_BITWIDTH(CONFIG_REG_BITWIDTH), .OUT_STROBE_DELAY (WR_STROBE_DELAY)) FG(
 //     .clk_i (clk),
@@ -102,35 +95,33 @@ module tt_um_FG_TOP (
 // );       
 
 
+always @(posedge clk) begin
 
-// always @(posedge clk) begin
+   if (!rst_n) begin
+        d_Valid_STRB_reg <= 1'b0;
+   end else
+        d_Valid_STRB_reg <= d_Valid_STRB;
+end
 
-//    if (!rst_n) begin
-//         d_Valid_STRB_reg <= 1'b0;
-//    end else
-//         d_Valid_STRB_reg <= d_Valid_STRB;
-// end
+// LED
+assign uio_out[0] = 1'd1; // ON LED
+assign uio_out[1] = rst_n; // dac_clr_o clear / resets the DAC
+assign uio_out[2] = 1'd1; // dac_pd_o // disable power down mode
+assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write data
+assign uio_out[4] = 1'd0;
+assign uio_out[5] = 1'd0;
+assign uio_out[6] = 1'd0;
+assign uio_out[7] = 1'd0;
 
-// // LED
-// assign uio_out[0] = 1'd1; // ON LED
-// assign uio_out[1] = rst_n; // dac_clr_o clear / resets the DAC
-// assign uio_out[2] = 1'd1; // dac_pd_o // disable power down mode
-// assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write data
-// assign uio_out[4] = 1'd0;
-// assign uio_out[5] = 1'd0;
-// assign uio_out[6] = 1'd0;
-// assign uio_out[7] = 1'd0;
+// settling time of DAC > 10 us -> 100 kHz -> Prescaler of 500 (with a 50 MHz clock)
+//localparam [15:0] prescaler_100kHz = 499; // 500 - 1
+//assign PSC = prescaler_100kHz;
 
-// // settling time of DAC > 10 us -> 100 kHz -> Prescaler of 500 (with a 50 MHz clock)
-// //localparam [15:0] prescaler_100kHz = 499; // 500 - 1
-// //assign PSC = prescaler_100kHz;
+//localparam RADIX_UNSIGNED = 1'b1;
+//assign Radix = RADIX_UNSIGNED;
 
-// //localparam RADIX_UNSIGNED = 1'b1;
-// //assign Radix = RADIX_UNSIGNED;
-
-// //localparam real VDD = 3.3;
-// ///localparam real voltage__digit =  (2**BITWIDTH - 1) / VDD;
-// //localparam real CORDIC_GAIN = 1.647;
+//localparam real VDD = 3.3;
+///localparam real voltage__digit =  (2**BITWIDTH - 1) / VDD;
+//localparam real CORDIC_GAIN = 1.647;
 
 endmodule
-
