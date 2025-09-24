@@ -66,7 +66,7 @@ assign uio_oe = 8'b00001111; // upper 4 bits input (Adress input), lower 4 bits 
 // ----------------------- SYNCHRONIZER ----------------------- //
  
 wire enable_i;
-wire [2:0] select_i;
+assign enable_i = 1'd1; // always enabled
 
 FG_Synchronizer #(.STAGES (SYNC_STAGES)) SW_Enable(
     .clk_i (clk),
@@ -118,5 +118,6 @@ assign uio_out[3] = !(d_Valid_STRB || d_Valid_STRB_reg); // dac_wr_o  //write da
 
 
 endmodule
+
 
 
