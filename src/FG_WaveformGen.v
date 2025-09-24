@@ -56,8 +56,8 @@ assign out_o = val;
 //     end 
 // end
 
-assign k_rise = k_rise_i;
-assign k_fall = k_fall_i;
+//assign k_rise = k_rise_i;
+//assign k_fall = k_fall_i;
 
 // ----------------------- FSM ----------------------- //
 
@@ -108,7 +108,7 @@ assign k_fall = k_fall_i;
 
 // used to force the use of only one adder
 wire signed [WAVEFORM_BITWIDTH:0] delta_step;
-assign delta_step = val + ((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
+assign delta_step = val + 1; //((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
 
 always @(posedge clk_i) begin
     if (!rstn_i) begin
@@ -147,5 +147,6 @@ end
 //         endcase
 //     end
 // end
+
 
 endmodule
