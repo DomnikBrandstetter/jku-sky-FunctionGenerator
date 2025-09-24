@@ -135,5 +135,74 @@ always @(posedge clk_i) begin
 end
 
 
+// always @(posedge clk_i) begin
+
+//    if (!rstn_i) begin
+//         x[0] <= 0;
+//         y[0] <= 0;
+//         phase[0] <= 0;
+
+//    end else if (clk_en_i) begin
+//         case(quadrant)
+//             2'b00,
+//             2'b11: // no changes
+//             begin
+//                 x[0] <= {{{(1){x_initial_i[BITWIDTH-1]}}}, x_initial_i};
+//                 y[0] <= {{{(1){y_initial_i[BITWIDTH-1]}}}, y_initial_i};;
+//                 phase[0] <= phase_i;
+//             end
+
+//             2'b01: // subtract pi/2
+//             begin
+//                 x[0] <= -{{{(1){y_initial_i[BITWIDTH-1]}}}, y_initial_i};;
+//                 y[0] <= {{{(1){x_initial_i[BITWIDTH-1]}}}, x_initial_i};
+//                 phase[0] <= {2'b00, phase_i[BITWIDTH_PHASE-3:0]}; 
+//             end
+
+//             2'b10: // add pi/2
+//             begin
+//                 x[0] <= {{{(1){y_initial_i[BITWIDTH-1]}}}, y_initial_i};
+//                 y[0] <= -{{{(1){x_initial_i[BITWIDTH-1]}}}, x_initial_i};
+//                 phase[0] <= {2'b11, phase_i[BITWIDTH_PHASE-3:0]};
+//             end 
+//         endcase
+//    end
+// end
+
+// // ----------------------- GENERATE ITERATIONS ----------------------- //
+
+// generate
+//     for (i = 0; i < (BITWIDTH-1); i = i + 1)
+//     begin: cordic_iterations
+//         wire sign;
+//         wire signed [BITWIDTH:0] x_ssr, y_ssr;
+
+//         //sign of the current phase
+//         assign sign = phase[i][BITWIDTH_PHASE-1];
+        
+//         // signed shift right
+//         assign x_ssr = x[i] >>> i; 
+//         assign y_ssr = y[i] >>> i; 
+
+//         always @(posedge clk_i)
+//         begin
+//             if (!rstn_i) begin
+//                 x[i+1] <= 0;
+//                 y[i+1] <= 0;
+//                 phase[i+1] <= 0;
+
+//             end else if (clk_en_i && sign) begin
+//                 x[i+1] <= x[i] + y_ssr;
+//                 y[i+1] <= y[i] - x_ssr;
+//                 phase[i+1] <= phase[i] + atan_table[i];
+
+//             end else if (clk_en_i && !sign) begin
+//                 x[i+1] <= x[i] - y_ssr;
+//                 y[i+1] <= y[i] + x_ssr;
+//                 phase[i+1] <= phase[i] - atan_table[i];
+//             end
+//         end
+//     end
+// endgenerate
 
 endmodule

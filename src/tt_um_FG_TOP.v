@@ -63,6 +63,10 @@ end
 assign CR_bus = {CR0, CR1, CR2, CR3, CR4, CR5, CR6, CR7};
 assign uio_oe = 8'b00001111; // upper 4 bits input (Adress input), lower 4 bits output (DAC control signals)
 
+//WR pulse width > 20 ns -> 2 clock cycles are used (40 ns) -> strobes needs to be extended
+wire d_Valid_STRB;
+reg d_Valid_STRB_reg;
+
 // ----------------------- SYNCHRONIZER ----------------------- //
  
 wire enable_i;
@@ -87,9 +91,7 @@ FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .
     .outValid_STRB_o(d_Valid_STRB)
 );       
 
-//WR pulse width > 20 ns -> 2 clock cycles are used (40 ns) -> strobes needs to be extended
-wire d_Valid_STRB;
-reg d_Valid_STRB_reg;
+
 
 always @(posedge clk) begin
 
