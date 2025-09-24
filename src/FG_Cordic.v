@@ -80,22 +80,22 @@ always @(posedge clk_i) begin
             2'b00,
             2'b11: // no changes
             begin
-                x[0] <= x_initial_i;
-                y[0] <= y_initial_i;
+                x[0] <= {{{(1){x_initial_i[BITWIDTH-1]}}}, x_initial_i};
+                y[0] <= {{{(1){y_initial_i[BITWIDTH-1]}}}, y_initial_i};;
                 phase[0] <= phase_i;
             end
 
             2'b01: // subtract pi/2
             begin
-                x[0] <= -y_initial_i;
-                y[0] <= x_initial_i;
+                x[0] <= -{{{(1){y_initial_i[BITWIDTH-1]}}}, y_initial_i};;
+                y[0] <= {{{(1){x_initial_i[BITWIDTH-1]}}}, x_initial_i};
                 phase[0] <= {2'b00, phase_i[BITWIDTH_PHASE-3:0]}; 
             end
 
             2'b10: // add pi/2
             begin
-                x[0] <= y_initial_i;
-                y[0] <= -x_initial_i;
+                x[0] <= {{{(1){y_initial_i[BITWIDTH-1]}}}, y_initial_i};
+                y[0] <= -{{{(1){x_initial_i[BITWIDTH-1]}}}, x_initial_i};
                 phase[0] <= {2'b11, phase_i[BITWIDTH_PHASE-3:0]};
             end 
         endcase
