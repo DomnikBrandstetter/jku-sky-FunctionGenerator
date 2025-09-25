@@ -112,47 +112,47 @@ end
 
 //assign delta_step = val + ((state == RISE)? {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise} : -{{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall});
 
-// always @(posedge clk_i) begin
-//     if (!rstn_i) begin
-//         val <= 0;
-//     end else if(clk_en_i) begin
-//         if(state == RISE) begin
-//             val <= val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise};
-//         end else if(state == ON) begin
-//             val <= val - {{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall};
-//         end
-//     end
-// end
-
 always @(posedge clk_i) begin
     if (!rstn_i) begin
         val <= 0;
     end else if(clk_en_i) begin
-        case(state)
-            IDLE: begin
-                val <= 0; 
-            end 
-            RISE: begin
-                if((val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise}) <= amplitude && (val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise}) >= 0) begin
-                    val <= val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise};
-                end else begin
-                    val <= amplitude;
-                end
-            end
-            ON: begin
-                val <= amplitude;
-            end
-            FALL: begin
-                if((val - {{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall}) >= 0) begin
-                    val <= val - {{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall};
-                end else begin
-                    val <= 0;
-                end
-            end
-            default: state <= IDLE;
-        endcase
+        if(state == RISE) begin
+            val <= val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise};
+        end else if(state == ON) begin
+            val <= val - {{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall};
+        end
     end
 end
+
+// always @(posedge clk_i) begin
+//     if (!rstn_i) begin
+//         val <= 0;
+//     end else if(clk_en_i) begin
+//         case(state)
+//             IDLE: begin
+//                 val <= 0; 
+//             end 
+//             RISE: begin
+//                 if((val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise}) <= amplitude && (val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise}) >= 0) begin
+//                     val <= val + {{{(1){k_rise[WAVEFORM_BITWIDTH-1]}}}, k_rise};
+//                 end else begin
+//                     val <= amplitude;
+//                 end
+//             end
+//             ON: begin
+//                 val <= amplitude;
+//             end
+//             FALL: begin
+//                 if((val - {{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall}) >= 0) begin
+//                     val <= val - {{{(1){k_fall[WAVEFORM_BITWIDTH-1]}}}, k_fall};
+//                 end else begin
+//                     val <= 0;
+//                 end
+//             end
+//             default: state <= IDLE;
+//         endcase
+//     end
+// end
 
 // always @(posedge clk_i) begin
 //     if (!rstn_i) begin
