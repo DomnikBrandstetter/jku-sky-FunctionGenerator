@@ -192,9 +192,9 @@ always @(posedge clk_i) begin
                     val <= 0;
                 end
             end
-            default: state <= IDLE;
         endcase
     end
 end
 
 endmodule
+
