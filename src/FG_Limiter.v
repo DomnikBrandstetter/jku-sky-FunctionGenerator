@@ -13,7 +13,7 @@
 // limitations under the License.
 
 module FG_Limiter #(parameter BITWIDTH = 16, DATA_COUNT = 3)(
-    input wire outputEnable_i,
+    input wire enable_i,
     input wire [$clog2(DATA_COUNT)-1:0] select_i,
 
     input wire signed [BITWIDTH-1:0] offset_i,    
@@ -37,6 +37,6 @@ assign limited_result  = (result >= MAX_VALUE) ? MAX_VALUE[BITWIDTH-1:0] :
                          result[BITWIDTH-1:0];
 
 // Enable Out
-assign out_o = (outputEnable_i) ? limited_result : {(BITWIDTH){1'b0}};
+assign out_o = (enable_i) ? limited_result : {(BITWIDTH){1'b0}};
 
 endmodule

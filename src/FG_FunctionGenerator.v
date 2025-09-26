@@ -159,7 +159,7 @@ assign data[(2)*(BITWIDTH+1) +: BITWIDTH+1] = {{{BITWIDTH-(BITWIDTH-1){amplitude
 
 FG_Limiter #(.BITWIDTH (BITWIDTH), .DATA_COUNT(DATA_COUNT)) Limiter(
 
-    .outputEnable_i (outputEnable_i),
+    .enable_i (enable_i),
     .select_i ({CS_Mode, MS_Mode}),
 
     .offset_i (offset), 
