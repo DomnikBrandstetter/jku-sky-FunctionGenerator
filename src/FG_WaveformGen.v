@@ -1,5 +1,16 @@
 // Copyright 2024 Dominik Brandstetter
-// Apache 2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE−2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 module FG_WaveformGen #(
     parameter integer COUNTER_BITWIDTH  = 32,
@@ -12,81 +23,76 @@ module FG_WaveformGen #(
     input  wire [COUNTER_BITWIDTH-1:0]   counter_i,        // period T
     input  wire [COUNTER_BITWIDTH-1:0]   ON_counter_i,     // ON duration
 
-    // Unsigned slopes and amplitude (magnitude-only)
     input  wire [WAVEFORM_BITWIDTH-1:0]  k_rise_i,         // rise step per tick
     input  wire [WAVEFORM_BITWIDTH-1:0]  k_fall_i,         // fall step per tick
-    input  wire [WAVEFORM_BITWIDTH-1:0]  amplitude_i,      // max amplitude (unsigned)
+    input  wire [WAVEFORM_BITWIDTH-1:0]  amplitude_i,      
 
     input  wire [COUNTER_BITWIDTH-1:0]   counterValue_i,   // timebase
     output wire [WAVEFORM_BITWIDTH-1:0]  out_o,
     output wire                          strb_data_valid_o
 );
 
-localparam integer W = WAVEFORM_BITWIDTH;
+localparam integer BITWIDTH = WAVEFORM_BITWIDTH;
 
 // ----------------------- FSM ----------------------- //
 localparam [1:0] IDLE = 2'd0, RISE = 2'd1, ON = 2'd2, FALL = 2'd3;
 reg [1:0] state;
 
-reg [W-1:0] val;
+reg [BITWIDTH-1:0] val;
 assign out_o = val;
-
-// Pre-computed steps (unsigned, saturated)
-wire [W-1:0] step_up   = sat_add_u(val, k_rise_i); // clamp to MAX
-wire [W-1:0] step_down = sat_sub_u(val, k_fall_i); // floor at 0
 
 always @(posedge clk_i) begin
     if (!rstn_i) begin
         state <= IDLE;
-    end else if (strb_data_valid_i) begin
-        case (state)
-            IDLE: begin
-                // start a new cycle at counter wrap (example trigger)
-                if (counterValue_i == {COUNTER_BITWIDTH{1'b0}})
-                    state <= RISE;
+
+    end else if(strb_data_valid_i) begin
+        case(state)
+        IDLE: begin
+            if(counterValue_i == 0) begin
+                state <= RISE;
             end
-            RISE: begin
-                if (counterValue_i == ON_counter_i)
-                    state <= FALL;
-                else if (val == amplitude_i)
-                    state <= ON;
-                else if (counterValue_i == counter_i)
-                    state <= IDLE;
+        end 
+        RISE: begin
+            if(counterValue_i == ON_counter_i) begin
+                state <= FALL;
+            end else if(val == amplitude_i) begin
+                state <= ON;
+            end else if(counterValue_i == counter_i) begin
+                state <= IDLE;
             end
-            ON: begin
-                if (counterValue_i == ON_counter_i)
-                    state <= FALL;
-                else if (counterValue_i == {COUNTER_BITWIDTH{1'b0}})
-                    state <= RISE;
+        end
+        ON: begin
+            if(counterValue_i == 0) begin
+                state <= RISE;
+            end else if(counterValue_i == ON_counter_i) begin
+                state <= FALL;
             end
-            FALL: begin
-                if (counterValue_i == {COUNTER_BITWIDTH{1'b0}})
-                    state <= RISE;
-                else if (val == {W{1'b0}})
-                    state <= IDLE;
+        end
+        FALL: begin
+            if(counterValue_i == 0) begin
+                state <= RISE;
+            end else if (val == 0) begin
+                state <= IDLE;
             end
-            default: state <= IDLE;
+        end
+        default: state <= IDLE;
         endcase
     end
 end
 
 // ----------------------- VALUE UPDATE ----------------------- //
+wire [WAVEFORM_BITWIDTH-1:0] step;
+assign step = sat_add_cap(val, ((state == RISE)? k_rise_i : k_fall_i), amplitude_i, ((state == RISE)? 1'b0 : 1'b1)); 
+
 always @(posedge clk_i) begin
     if (!rstn_i) begin
-        val <= {W{1'b0}};
-    end else if (strb_data_valid_i) begin
-        case (state)
-            IDLE: val <= {W{1'b0}};
-            RISE: val <= (step_up <= amplitude_i) ? step_up : amplitude_i;
-            ON  : val <= amplitude_i;
-            FALL: val <= step_down; // already floored at 0
-            default: val <= {W{1'b0}};
-        endcase
+        val <= {BITWIDTH-1{1'b0}};
+    end else if(strb_data_valid_i) begin
+        val <= (state == IDLE) ? {BITWIDTH{1'b0}} : step;
     end
 end
 
 // ----------------------- DATA VALID STROBE ----------------------- //
-// Simple 1-cycle registered pass-through of input strobe
 reg strb_data_valid_reg;
 always @(posedge clk_i) begin
     if (!rstn_i) strb_data_valid_reg <= 1'b0;
@@ -94,26 +100,33 @@ always @(posedge clk_i) begin
 end
 assign strb_data_valid_o = strb_data_valid_reg;
 
-// ----------------------- UNSIGNED SATURATION FUNCS ----------------------- //
-// Unsigned saturating add: clamp to MAX on overflow
-function [W-1:0] sat_add_u;
-    input [W-1:0] a;
-    input [W-1:0] b;
-    reg   [W:0]   sum; // one extra carry bit
-begin
-    sum = {1'b0, a} + {1'b0, b};
-    if (sum[W]) sat_add_u = {W{1'b1}};      // overflow -> MAX
-    else        sat_add_u = sum[W-1:0];
-end
-endfunction
+// ----------------------- UNSIGNED SATURATION ADD FUNCTION ----------------------- //
+function [BITWIDTH-1:0] sat_add_cap;
+    input [BITWIDTH-1:0] a;
+    input [BITWIDTH-1:0] b;
+    input [BITWIDTH-1:0] upper;
+    input                is_sub;             // 0 = ADD, 1 = SUB
 
-// Unsigned saturating subtract: floor at 0 on underflow
-function [W-1:0] sat_sub_u;
-    input [W-1:0] a;
-    input [W-1:0] b;
+    reg  [BITWIDTH-1:0] b_eff;               // b after conditional invert
+    reg  [BITWIDTH:0]   s;                   // adder with carry-out (single adder)
+    reg  [BITWIDTH:0]   cmp;                 // (sum - upper) as add(~upper) + 1
 begin
-    if (a >= b) sat_sub_u = a - b;
-    else        sat_sub_u = {W{1'b0}};
+    // Single adder arithmetic: a + (b ^ is_sub) + is_sub
+    b_eff = b ^ {BITWIDTH{is_sub}};
+    s     = {1'b0, a} + {1'b0, b_eff} + {{BITWIDTH{1'b0}}, is_sub};
+
+    if (!is_sub) begin
+        // ADD: if carry-out -> overflow -> clamp to upper
+        if (s[BITWIDTH]) begin
+            sat_add_cap = upper;
+        end else begin
+            // Check if sum >= upper using (sum - upper); carry==1 means no borrow
+            cmp = {1'b0, s[BITWIDTH-1:0]} + {1'b0, ~upper} + {{BITWIDTH{1'b0}}, 1'b1};
+            sat_add_cap = cmp[BITWIDTH] ? upper : s[BITWIDTH-1:0];
+        end
+    end else begin
+        sat_add_cap = s[BITWIDTH] ? s[BITWIDTH-1:0] : {BITWIDTH{1'b0}};
+    end
 end
 endfunction
 

@@ -54,9 +54,9 @@ localparam AMPLITUDE_POS               = 8;
 localparam OFFSET_POS                  = 0;
 
 wire CS_Mode, MS_Mode, Radix;
-assign CS_Mode = CR_bus_i[CS_MODE_POS-1];
-assign MS_Mode = CR_bus_i[MS_MODE_POS-1];
-assign Radix   = CR_bus_i[RADIX_POS-1];
+assign CS_Mode = CR_bus_i[CS_MODE_POS];
+assign MS_Mode = CR_bus_i[CS_MODE_POS] ^ CR_bus_i[MS_MODE_POS];
+assign Radix   = CR_bus_i[RADIX_POS];
 
 wire [BITWIDTH_PRESCALAR-1:0] timerPrescaler;
 assign timerPrescaler = CR_bus_i[TIMER_PRESCALER_POS+BITWIDTH_PRESCALAR-1:TIMER_PRESCALER_POS];
@@ -122,7 +122,7 @@ CordicInterativ #() Cordic (
     .strb_data_valid_o(strb_data_valid_cordic)
 );
 
-assign sine = sine_cordic[9:2];
+assign sine = sine_cordic[BITWIDTH-1:0];
 
 // ----------------------- WAVEFORM ----------------------- //
 
@@ -170,25 +170,34 @@ FG_Limiter #(.BITWIDTH (BITWIDTH), .DATA_COUNT(DATA_COUNT)) Limiter(
 
 // ----------------------- DATA VALID STRB-GEN ----------------------- //
 
-reg outValid_STRB;
+reg outValid_STRB, outValid_STRB_reg;
+reg [BITWIDTH-1:0] out_reg;
 
 always @(*) begin
     if (CS_Mode) begin
-        outValid_STRB = clk_en;
+        outValid_STRB_reg <= clk_en;
     end else begin
         if(MS_Mode) begin
-            outValid_STRB = strb_data_valid_waveform;
+            outValid_STRB_reg <= strb_data_valid_cordic;
         end else begin
-            outValid_STRB = strb_data_valid_cordic;
+            outValid_STRB_reg <= strb_data_valid_waveform;
         end
     end
 end
 
-assign outValid_STRB_o = (enable_i)? outValid_STRB : 1'b0; 
+always @ (posedge clk_i) begin
+    if (!rstn_i) begin
+        out_reg <= {BITWIDTH{1'b0}};
+    end else if(outValid_STRB) begin
+        out_reg <= (Radix)? out_unsigned : out_signed;
+    end
+end
 
 assign out_signed = out;
 assign out_unsigned = out + SIGNED_TO_UNSIGNED[BITWIDTH-1:0];
+assign outValid_STRB = (enable_i)? outValid_STRB_reg : 1'b0;
 
-assign out_o = (Radix)? out_unsigned : out_signed;
+assign outValid_STRB_o = outValid_STRB;
+assign out_o = out_reg;
 
 endmodule
