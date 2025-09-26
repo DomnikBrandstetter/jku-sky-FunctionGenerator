@@ -27,6 +27,7 @@ module tt_um_FG_TOP (
 );
 
 localparam BITWIDTH = 8;
+localparam BITWIDTH_PRESCALAR = 9;
 localparam BITWIDTH_TIMER = 10;
 localparam CONFIG_REG_BITWIDTH = 64;
 localparam SYNC_STAGES = 2;
@@ -84,10 +85,10 @@ FG_Synchronizer #(.STAGES (SYNC_STAGES)) SW_Enable(
 // assign uo_out = CR0;
 // assign d_Valid_STRB = CR1[0];
 
-FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_TIMER (BITWIDTH_TIMER), .CONFIG_REG_BITWIDTH(CONFIG_REG_BITWIDTH), .OUT_STROBE_DELAY (WR_STROBE_DELAY)) FG(
+FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_PRESCALAR(BITWIDTH_PRESCALAR), .BITWIDTH_TIMER (BITWIDTH_TIMER), .CONFIG_REG_BITWIDTH(CONFIG_REG_BITWIDTH)) FG(
     .clk_i (clk),
     .rstn_i (rst_n),
-    .outputEnable_i (enable_i),
+    .enable_i (enable_i),
 
     .CR_bus_i (CR_bus),
     .out_o (uo_out),

@@ -13,14 +13,15 @@
 // limitations under the License.
 
 `include "FG_Timer.v"
-`include "FG_Cordic.v"
+//`include "../../cordic/rtl/CordicIterativ.v"
+`include "CordicIterativ.v"
 `include "FG_WaveformGen.v"
 `include "FG_Limiter.v"
 
-module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_TIMER = 10, CONFIG_REG_BITWIDTH = 64, OUT_STROBE_DELAY = 0)(
+module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_PRESCALAR = 9, BITWIDTH_TIMER = 10, CONFIG_REG_BITWIDTH = 64)(
     input wire clk_i,
     input wire rstn_i,
-    input wire outputEnable_i,
+    input wire enable_i,
 
     input wire [CONFIG_REG_BITWIDTH-1:0] CR_bus_i,
         // 63      -> constant signal  - BIT (0 = False    | 1 = True) 
@@ -40,145 +41,98 @@ module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_TIMER = 10, CONFI
 
 // ----------------------- CONSTANTS AND CONFIGURATION REGISTERS ----------------------- //
 
-// Config Reg 1
-localparam CS_MODE_POS = CONFIG_REG_BITWIDTH;
-localparam MS_MODE_POS = CONFIG_REG_BITWIDTH-1;
-localparam RADIX_POS   = MS_MODE_POS-1;
-localparam TIMER_PRESCALER_BITWIDTH = 9;
-localparam TIMER_PRESCALER_POS = 52;
+// Config Reg 1 list
+localparam CS_MODE_POS                 = 63;
+localparam MS_MODE_POS                 = 62;
+localparam RADIX_POS                   = 61;
+localparam TIMER_PRESCALER_POS         = 52;
+localparam TIMER_COUNTER_POS           = 42;
+localparam INIT_PHASE___ON_COUNTER_POS = 32;
+localparam RISE_SLOPE_POS              = 24;
+localparam FALL_SLOPE_POS              = 16;
+localparam AMPLITUDE_POS               = 8;
+localparam OFFSET_POS                  = 0;
 
 wire CS_Mode, MS_Mode, Radix;
 assign CS_Mode = CR_bus_i[CS_MODE_POS-1];
 assign MS_Mode = CR_bus_i[MS_MODE_POS-1];
 assign Radix   = CR_bus_i[RADIX_POS-1];
 
-wire [TIMER_PRESCALER_BITWIDTH-1:0] timerPrescaler;
-assign timerPrescaler = CR_bus_i[TIMER_PRESCALER_POS+TIMER_PRESCALER_BITWIDTH-1:TIMER_PRESCALER_POS];
+wire [BITWIDTH_PRESCALAR-1:0] timerPrescaler;
+assign timerPrescaler = CR_bus_i[TIMER_PRESCALER_POS+BITWIDTH_PRESCALAR-1:TIMER_PRESCALER_POS];
 
-// Config Reg 2
-localparam TIMER_COUNTER_BITWIDTH = BITWIDTH_TIMER;
-localparam TIMER_COUNTER_POS = 42;
+wire [BITWIDTH_TIMER-1:0] timerCounter;
+assign timerCounter = CR_bus_i[TIMER_COUNTER_POS+BITWIDTH_TIMER-1:TIMER_COUNTER_POS];
 
-wire [TIMER_COUNTER_BITWIDTH-1:0] timerCounter;
-assign timerCounter = CR_bus_i[TIMER_COUNTER_POS+TIMER_COUNTER_BITWIDTH-1:TIMER_COUNTER_POS];
+wire [BITWIDTH_TIMER-1:0] initPhase___ON_counter;
+assign initPhase___ON_counter = CR_bus_i[INIT_PHASE___ON_COUNTER_POS+BITWIDTH_TIMER-1:INIT_PHASE___ON_COUNTER_POS];
 
-// Config Reg 3 (initial phase for sine, ON counter for waveform generation)
-localparam INIT_PHASE___ON_COUNTER_BITWIDTH = BITWIDTH_TIMER;
-localparam INIT_PHASE___ON_COUNTER_POS = 32;
+wire [BITWIDTH-1:0] k_rise, k_fall;
+assign k_rise = CR_bus_i[RISE_SLOPE_POS+BITWIDTH-1:RISE_SLOPE_POS];
+assign k_fall = CR_bus_i[FALL_SLOPE_POS+BITWIDTH-1:FALL_SLOPE_POS];
 
-wire [INIT_PHASE___ON_COUNTER_BITWIDTH-1:0] initPhase___ON_counter;
-assign initPhase___ON_counter = CR_bus_i[INIT_PHASE___ON_COUNTER_POS+INIT_PHASE___ON_COUNTER_BITWIDTH-1:INIT_PHASE___ON_COUNTER_POS];
+wire [BITWIDTH-1:0] amplitude;
+assign amplitude = CR_bus_i[AMPLITUDE_POS+BITWIDTH-1:AMPLITUDE_POS];
 
-// Config Reg 4
-localparam SLOPE_BITWIDTH = BITWIDTH;
-localparam RISE_SLOPE_POS = 24;
-localparam FALL_SLOPE_POS = 16;
+wire signed [BITWIDTH-1:0] offset;
+assign offset = CR_bus_i[OFFSET_POS+BITWIDTH-1:OFFSET_POS];
 
-wire [SLOPE_BITWIDTH-1:0] k_rise, k_fall;
-assign k_rise = CR_bus_i[RISE_SLOPE_POS+SLOPE_BITWIDTH-1:RISE_SLOPE_POS];
-assign k_fall = CR_bus_i[FALL_SLOPE_POS+SLOPE_BITWIDTH-1:FALL_SLOPE_POS];
-
-// Config Reg 5
-localparam AMPLITUDE_BITWIDTH = BITWIDTH;
-localparam AMPLITUDE_POS = 8;
-localparam OFFSET_BITWIDTH = BITWIDTH;
-localparam OFFSET_POS = 0;
-
-wire [AMPLITUDE_BITWIDTH-1:0] amplitude;
-assign amplitude = CR_bus_i[AMPLITUDE_POS+AMPLITUDE_BITWIDTH-1:AMPLITUDE_POS];
-
-wire signed [OFFSET_BITWIDTH-1:0] offset;
-assign offset = CR_bus_i[OFFSET_POS+OFFSET_BITWIDTH-1:OFFSET_POS];
-
-wire rst_n;
-assign rst_n = rstn_i;
 // ----------------------- TIMER ----------------------- //
 
 // is used to perform timer functions -> time base
 
-wire [TIMER_COUNTER_BITWIDTH-1:0] counterValue;
-wire clk_en, timerConfigChanged, rstn__configRST;
+wire [BITWIDTH_TIMER-1:0] counterValue;
+wire clk_en;
 
-FG_Timer #(.COUNTER_BITWIDTH (TIMER_COUNTER_BITWIDTH), .PSC_BITWIDTH (TIMER_PRESCALER_BITWIDTH)) Timer (
+FG_Timer #(.COUNTER_BITWIDTH (BITWIDTH_TIMER), .PSC_BITWIDTH (BITWIDTH_PRESCALAR)) Timer (
     .clk_i (clk_i),
-    .rstn_i (rst_n),
+    .rstn_i (rstn_i),
  
-    .enable_i (outputEnable_i), //(!CS_Mode),
+    .enable_i (enable_i),
     .timerMode_i (MS_Mode),
     .prescaler_i (timerPrescaler),
     .counter_i (timerCounter),
     .preload_i (initPhase___ON_counter),
     
-    .CR_o (counterValue),
-    .timerConfigChanged_o (timerConfigChanged), 
+    .counterVal_o (counterValue),
     .clk_en_o (clk_en)   
 );
 
-assign rstn__configRST = (rst_n && !timerConfigChanged)? 1'b1 : 1'b0;
-
-// ----------------------- DATA VALID STRB-GEN ----------------------- //
-reg outValid_STRB_shiftreg [OUT_STROBE_DELAY:0];
-
-genvar i;
-
-always @ (posedge clk_i)
-begin
-    if (!rst_n) begin
-        outValid_STRB_shiftreg[0] <= 1'b0;
-    end else begin
-        outValid_STRB_shiftreg[0] <= clk_en;
-    end 
-end
-
-generate
-    for (i = 0; i < OUT_STROBE_DELAY; i = i + 1)
-    begin: shiftreg
-        always @ (posedge clk_i)
-        begin
-            if (!rst_n) begin
-                outValid_STRB_shiftreg[i+1] <= 1'b0;
-            end else begin
-                outValid_STRB_shiftreg[i+1] <= outValid_STRB_shiftreg[i];
-            end
-        end
-    end
-endgenerate
-
-assign outValid_STRB_o = outValid_STRB_shiftreg[OUT_STROBE_DELAY]; 
-
 // ----------------------- CORDIC ----------------------- //
 
-localparam [BITWIDTH-1:0] Y_INITIAL = 0;
-localparam BITWIDTH_CORDIC_TAN = TIMER_COUNTER_BITWIDTH;
-wire signed [BITWIDTH:0] sine, cosine;
+wire signed [9:0] x_initial;
+wire signed [9:0] sine_cordic;
+wire signed [BITWIDTH-1:0] sine;
+wire strb_data_valid_cordic;
+wire signed [9:0] X_out;
+wire signed [9:0] Z_out;
 
-    /*
-FG_Cordic #(.BITWIDTH (BITWIDTH), .BITWIDTH_PHASE (BITWIDTH_CORDIC_TAN)) Cordic(
+assign x_initial = { {2{amplitude[BITWIDTH-1]}}, amplitude };
+
+CordicInterativ #() Cordic (
     .clk_i (clk_i),
-    .rstn_i (rstn__configRST),
-    .clk_en_i (clk_en),
-   
-    // Interface
-    .phase_i (counterValue),
-    .x_initial_i  (amplitude), 
-    .y_initial_i (Y_INITIAL),
-    
-    .cosine_o (cosine),
-    .sine_o  (sine)
+    .rstn_i (rstn_i),             
+    .strb_data_valid_i(clk_en),
+    .X_i (x_initial),
+    .Y_i (10'd0),
+    .Z_i (counterValue),
+    .Y_o (sine_cordic),
+    .X_o (X_out),
+    .Z_o (Z_out),
+    .strb_data_valid_o(strb_data_valid_cordic)
 );
-*/
-    
-assign sine = 0;
-assign cosine = 0;
+
+assign sine = sine_cordic[9:2];
 
 // ----------------------- WAVEFORM ----------------------- //
 
-wire signed [BITWIDTH:0] waveform;
+wire [BITWIDTH-1:0] waveform;
+wire strb_data_valid_waveform;
 
-FG_WaveformGen #(.COUNTER_BITWIDTH (TIMER_COUNTER_BITWIDTH), .WAVEFORM_BITWIDTH(BITWIDTH)) Wave(
+FG_WaveformGen #(.COUNTER_BITWIDTH (BITWIDTH_TIMER), .WAVEFORM_BITWIDTH(BITWIDTH)) Wave(
     .clk_i (clk_i),
-    .rstn_i (rstn__configRST),
-    .clk_en_i (clk_en),
+    .rstn_i (rstn_i),
+    .strb_data_valid_i (clk_en),
 
     .counter_i (timerCounter), 
     .ON_counter_i (initPhase___ON_counter), 
@@ -186,11 +140,10 @@ FG_WaveformGen #(.COUNTER_BITWIDTH (TIMER_COUNTER_BITWIDTH), .WAVEFORM_BITWIDTH(
     .k_fall_i (k_fall),
     .amplitude_i (amplitude),
 
-   .CR_i (counterValue),
-   .out_o (waveform) 
+   .counterValue_i (counterValue),
+   .out_o (waveform),
+   .strb_data_valid_o(strb_data_valid_waveform) 
 );
-
-//assign waveform = cosine;
 
 // ----------------------- LIMITER ----------------------- //
 
@@ -200,8 +153,8 @@ localparam SIGNED_TO_UNSIGNED = 2 ** (BITWIDTH-1);
 wire [(DATA_COUNT*(BITWIDTH+1))-1:0] data;
 wire [BITWIDTH-1:0] out, out_signed, out_unsigned;
 
-assign data[(0)*(BITWIDTH+1) +: BITWIDTH+1] = waveform;
-assign data[(1)*(BITWIDTH+1) +: BITWIDTH+1] = sine;
+assign data[(0)*(BITWIDTH+1) +: BITWIDTH+1] = {1'b0, waveform};
+assign data[(1)*(BITWIDTH+1) +: BITWIDTH+1] = {{sine[BITWIDTH-1]}, sine}; 
 assign data[(2)*(BITWIDTH+1) +: BITWIDTH+1] = {{{BITWIDTH-(BITWIDTH-1){amplitude  [BITWIDTH-1]}}}, amplitude};
 
 FG_Limiter #(.BITWIDTH (BITWIDTH), .DATA_COUNT(DATA_COUNT)) Limiter(
@@ -215,10 +168,27 @@ FG_Limiter #(.BITWIDTH (BITWIDTH), .DATA_COUNT(DATA_COUNT)) Limiter(
     .out_o (out)
 );
 
+// ----------------------- DATA VALID STRB-GEN ----------------------- //
+
+reg outValid_STRB;
+
+always @(*) begin
+    if (CS_Mode) begin
+        outValid_STRB = clk_en;
+    end else begin
+        if(MS_Mode) begin
+            outValid_STRB = strb_data_valid_waveform;
+        end else begin
+            outValid_STRB = strb_data_valid_cordic;
+        end
+    end
+end
+
+assign outValid_STRB_o = (enable_i)? outValid_STRB : 1'b0; 
+
 assign out_signed = out;
 assign out_unsigned = out + SIGNED_TO_UNSIGNED[BITWIDTH-1:0];
 
-assign out_o = Radix? out_unsigned : out_signed;
-
+assign out_o = (Radix)? out_unsigned : out_signed;
 
 endmodule
