@@ -27,7 +27,7 @@ module tt_um_FG_TOP (
 );
 
 localparam BITWIDTH            = 8;
-localparam BITWIDTH_PRESCALAR  = 7;
+localparam BITWIDTH_PRESCALAR  = 6;
 localparam BITWIDTH_TIMER      = 8;
 localparam CONFIG_REG_BITWIDTH = 56;
 localparam SYNC_STAGES         = 2;
@@ -107,5 +107,6 @@ assign uio_out[4] = 1'd0;
 assign uio_out[5] = 1'd0;
 assign uio_out[6] = 1'd0;
 assign uio_out[7] = 1'd0;
+
 
 endmodule
