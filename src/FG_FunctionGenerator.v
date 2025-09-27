@@ -76,8 +76,8 @@ wire signed [BITWIDTH-1:0] offset;
 assign offset = CR_bus_i[OFFSET_POS+BITWIDTH-1:OFFSET_POS];
 
 // ----------------------- TIMER ----------------------- //
-
-// is used to perform timer functions -> time base
+// is used to perform timer functions -> time base for sine wave generation and waveform generation
+// generates a clock enable signal with a frequency determined by the prescaler and counter value
 
 wire [BITWIDTH_TIMER-1:0] counterValue;
 wire clk_en;
@@ -97,22 +97,25 @@ FG_Timer #(.COUNTER_BITWIDTH (BITWIDTH_TIMER), .PSC_BITWIDTH (BITWIDTH_PRESCALAR
 );
 
 // ----------------------- CORDIC ----------------------- //
+// is used to generate a sine wave with a given amplitude and phase (counterValue)
+localparam SIGNED_TO_UNSIGNED = 2 ** (BITWIDTH-1); 
 
-wire signed [7:0] x_initial;
-wire signed [7:0] sine_cordic;
-wire signed [BITWIDTH-1:0] sine;
-wire strb_data_valid_cordic;
+wire signed [7:0] x_initial, y_initial;
+wire signed [BITWIDTH-1:0] sine_cordic;
+wire [BITWIDTH-1:0] sine;
 wire signed [7:0] X_out;
 wire signed [7:0] Z_out;
+wire strb_data_valid_cordic;
 
-assign x_initial = amplitude;// { {2{amplitude[BITWIDTH-1]}}, amplitude };
+assign y_initial = 8'd0;
+assign x_initial = amplitude;
 
 CordicInterativ #() Cordic (
     .clk_i (clk_i),
     .rstn_i (rstn_i),             
     .strb_data_valid_i(clk_en),
     .X_i (x_initial),
-    .Y_i (8'd0),
+    .Y_i (y_initial),
     .Z_i (counterValue),
     .Y_o (sine_cordic),
     .X_o (X_out),
@@ -120,9 +123,10 @@ CordicInterativ #() Cordic (
     .strb_data_valid_o(strb_data_valid_cordic)
 );
 
-assign sine = sine_cordic[BITWIDTH-1:0];
+assign sine = sine_cordic + SIGNED_TO_UNSIGNED;
 
 // ----------------------- WAVEFORM ----------------------- //
+// is used to generate different waveforms (e.g. triangle, sawtooth, rectangle) with a given amplitude and rise/fall slope
 
 wire [BITWIDTH-1:0] waveform;
 wire strb_data_valid_waveform;
@@ -146,14 +150,13 @@ FG_WaveformGen #(.COUNTER_BITWIDTH (BITWIDTH_TIMER), .WAVEFORM_BITWIDTH(BITWIDTH
 // ----------------------- LIMITER ----------------------- //
 
 localparam DATA_COUNT = 3;
-localparam SIGNED_TO_UNSIGNED = 2 ** (BITWIDTH-1);
 
-wire [(DATA_COUNT*(BITWIDTH+1))-1:0] data;
+wire [(DATA_COUNT*(BITWIDTH))-1:0] data;
 wire [BITWIDTH-1:0] out;
 
-assign data[(0)*(BITWIDTH+1) +: BITWIDTH+1] = {1'b0, waveform};
-assign data[(1)*(BITWIDTH+1) +: BITWIDTH+1] = {{sine[BITWIDTH-1]}, sine}; 
-assign data[(2)*(BITWIDTH+1) +: BITWIDTH+1] = {{{BITWIDTH-(BITWIDTH-1){amplitude  [BITWIDTH-1]}}}, amplitude};
+assign data[(0)*(BITWIDTH) +: BITWIDTH] = waveform;
+assign data[(1)*(BITWIDTH) +: BITWIDTH] = sine; 
+assign data[(2)*(BITWIDTH) +: BITWIDTH] = amplitude;
 
 FG_Limiter #(.BITWIDTH (BITWIDTH), .DATA_COUNT(DATA_COUNT)) Limiter(
 
@@ -168,8 +171,7 @@ FG_Limiter #(.BITWIDTH (BITWIDTH), .DATA_COUNT(DATA_COUNT)) Limiter(
 
 // ----------------------- DATA VALID STRB-GEN ----------------------- //
 
-reg outValid_STRB;
-reg outValid_STRB_reg;
+reg outValid_STRB, outValid_STRB_reg;
 reg [BITWIDTH-1:0] out_reg;
 
 always @(*) begin
@@ -196,6 +198,5 @@ end
 
 assign outValid_STRB_o = outValid_STRB_reg;
 assign out_o = out_reg;
-
 
 endmodule

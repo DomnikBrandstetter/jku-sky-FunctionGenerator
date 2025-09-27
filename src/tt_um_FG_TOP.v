@@ -39,20 +39,20 @@ wire WR_enable_n;
 wire enable, enable_n;
 wire d_Valid_STRB;
 
-reg [7:0] CR0, CR1, CR2, CR3, CR4, CR5, CR6, CR7;
-wire [55:0] CR_bus;
+reg [7:0] CR0, CR1, CR2, CR3, CR4, CR5, CR6;
+wire [CONFIG_REG_BITWIDTH-1:0] CR_bus;
 
 assign enable = ~enable_n;
 
 always @(posedge clk) begin
   if (!rst_n) begin 
-    CR0 <= 8'h61;   
-    CR1 <= 8'h40; 
-    CR2 <= 8'h68; 
+    CR0 <= 8'h54;   
+    CR1 <= 8'h10; 
+    CR2 <= 8'h00; 
     CR3 <= 8'h00;
     CR4 <= 8'h00; 
-    CR5 <= 8'h00; 
-    CR6 <= 8'h32;
+    CR5 <= 8'h32;  
+    CR6 <= 8'h80;
   end else if (!enable && !WR_enable_n) begin
     // write selected register
     case (uio_in[5:3]) 
@@ -107,6 +107,5 @@ assign uio_out[4] = 1'd0;
 assign uio_out[5] = 1'd0;
 assign uio_out[6] = 1'd0;
 assign uio_out[7] = 1'd0;
-
 
 endmodule

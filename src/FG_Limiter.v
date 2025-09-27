@@ -17,16 +17,15 @@ module FG_Limiter #(parameter BITWIDTH = 16, DATA_COUNT = 3)(
     input wire [$clog2(DATA_COUNT)-1:0] select_i,
 
     input wire signed [BITWIDTH-1:0] offset_i,    
-    input wire [(DATA_COUNT*(BITWIDTH+1))-1:0] data_i,
+    input wire [(DATA_COUNT*(BITWIDTH))-1:0] data_i,
     
-    output wire signed [BITWIDTH-1:0] out_o 
+    output wire [BITWIDTH-1:0] out_o 
 );
 
-wire signed [BITWIDTH:0] result;
-
-assign result = data_i[(select_i)*(BITWIDTH+1) +: BITWIDTH+1] + {{{(1){offset_i[BITWIDTH-1]}}}, offset_i};
+wire signed [BITWIDTH-1:0] result;
+assign result = data_i[(select_i)*(BITWIDTH) +: BITWIDTH] + offset_i;
 
 // Enable Out
-assign out_o = (enable_i) ? result[BITWIDTH-1:0] : {(BITWIDTH){1'b0}};
+assign out_o = (enable_i) ? result : {(BITWIDTH){1'b0}};
 
 endmodule

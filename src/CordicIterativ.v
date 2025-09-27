@@ -1,4 +1,4 @@
-// CORDIC iterative architecture (Verilog-2001) — optimized for Y_i == 0
+// CORDIC iterative architecture with pipelined CORDIC slices
 
 `include "CordicSlice.v"
 
@@ -7,7 +7,7 @@ module CordicInterativ(
     input  wire              rstn_i,
     input  wire              strb_data_valid_i,
     input  wire signed [7:0] X_i,
-    input  wire signed [7:0] Y_i,  // not used (assumed 0)
+    input  wire signed [7:0] Y_i,
     input  wire signed [7:0] Z_i,
     output wire signed [7:0] X_o,
     output wire signed [7:0] Y_o,
@@ -15,30 +15,30 @@ module CordicInterativ(
     output wire              strb_data_valid_o
 );
 
-  // ------------------------- params --------------------------
-  localparam integer N_INT   = 0;
-  localparam integer N_FRAC  = -7;
-  localparam integer BITWIDTH= N_INT - N_FRAC + 1; // =10
+// ------------------------- params -------------------------- //
 
-  localparam integer CORDIC_MODE       = 0;  // 0=ROTATION
-  localparam integer COORDINATE_SYSTEM = 0;  // 0=CIRCULAR
+localparam integer N_INT             = 0;
+localparam integer N_FRAC            = -7;
+localparam integer BITWIDTH          = N_INT - N_FRAC + 1;
 
-  localparam integer N_CORDIC_ITERATIONS  = BITWIDTH;
-  localparam integer SHIFT_VALUE_BITWIDTH = $clog2(N_CORDIC_ITERATIONS + 1);
+// Additional parameters for CORDIC mode and coordinate system: TODO
+localparam integer CORDIC_MODE       = 0;  // 0 = ROTATION, 1 = VECTORING
+localparam integer COORDINATE_SYSTEM = 0;  // 0 = CIRCULAR, 1 = LINEAR, 2 = HYPERBOLIC
 
-  localparam signed [BITWIDTH-1:0] PI_HALF = 8'sb01000000;
-  localparam [N_CORDIC_ITERATIONS*BITWIDTH-1:0] ATAN_TABLE = {
-      8'b00000001,  // 7
-      8'b00000011,  // 6
-      8'b00000101,  // 5
-      8'b00001010,  // 4
-      8'b00010100,  // 3
-      8'b00101000,  // 2
-      8'b01001100,  // 1
-      8'b10000000   // 0
-  };
+localparam integer N_CORDIC_ITERATIONS   = BITWIDTH;           
+localparam integer SHIFT_VALUE_BITWIDTH  = $clog2(N_CORDIC_ITERATIONS + 1);
 
-  
+localparam signed [BITWIDTH-1:0] PI_HALF = 8'b01000000;
+localparam [N_CORDIC_ITERATIONS*BITWIDTH-1:0] ATAN_TABLE = {
+    8'b00000000,  // 0.000000 
+    8'b00000001,  // 0.007812 
+    8'b00000001,  // 0.007812 
+    8'b00000011,  // 0.023438 
+    8'b00000101,  // 0.039062 
+    8'b00001010,  // 0.078125 
+    8'b00010011,  // 0.148438 
+    8'b00100000}; // 0.250000 
+
 function [BITWIDTH-1:0] atan_value;
     input integer i;
     begin
