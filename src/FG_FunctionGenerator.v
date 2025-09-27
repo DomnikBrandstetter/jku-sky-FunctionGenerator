@@ -13,8 +13,8 @@
 // limitations under the License.
 
 `include "FG_Timer.v"
-`include "../../cordic/rtl/CordicIterativ.v"
-//`include "CordicIterativ.v"
+//`include "../../cordic/rtl/CordicIterativ.v"
+`include "CordicIterativ.v"
 `include "FG_WaveformGen.v"
 `include "FG_Limiter.v"
 

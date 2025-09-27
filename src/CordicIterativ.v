@@ -6,18 +6,18 @@ module CordicInterativ(
     input  wire              clk_i,
     input  wire              rstn_i,
     input  wire              strb_data_valid_i,
-    input  wire signed [9:0] X_i,
-    input  wire signed [9:0] Y_i,  // not used (assumed 0)
-    input  wire signed [9:0] Z_i,
-    output wire signed [9:0] X_o,
-    output wire signed [9:0] Y_o,
-    output wire signed [9:0] Z_o,
+    input  wire signed [7:0] X_i,
+    input  wire signed [7:0] Y_i,  // not used (assumed 0)
+    input  wire signed [7:0] Z_i,
+    output wire signed [7:0] X_o,
+    output wire signed [7:0] Y_o,
+    output wire signed [7:0] Z_o,
     output wire              strb_data_valid_o
 );
 
   // ------------------------- params --------------------------
   localparam integer N_INT   = 0;
-  localparam integer N_FRAC  = -9;
+  localparam integer N_FRAC  = -7;
   localparam integer BITWIDTH= N_INT - N_FRAC + 1; // =10
 
   localparam integer CORDIC_MODE       = 0;  // 0=ROTATION
@@ -37,16 +37,14 @@ module CordicInterativ(
 
   localparam signed [BITWIDTH-1:0] PI_HALF = 10'sb0100000000;
   localparam [N_CORDIC_ITERATIONS*BITWIDTH-1:0] ATAN_TABLE = {
-      10'b0000000000,  // 9
-      10'b0000000001,  // 8
-      10'b0000000001,  // 7
-      10'b0000000011,  // 6
-      10'b0000000101,  // 5
-      10'b0000001010,  // 4
-      10'b0000010100,  // 3
-      10'b0000101000,  // 2
-      10'b0001001100,  // 1
-      10'b0010000000   // 0
+      8'b00000001,  // 7
+      8'b00000011,  // 6
+      8'b00000101,  // 5
+      8'b00001010,  // 4
+      8'b00010100,  // 3
+      8'b00101000,  // 2
+      8'b01001100,  // 1
+      8'b10000000   // 0
   };
 
   function [BITWIDTH-1:0] atan_value;
