@@ -1,4 +1,4 @@
-// CORDIC iterative architecture with pipelined CORDIC slices
+// CORDIC iterative architecture (Verilog-2001) — optimized for Y_i == 0
 
 `include "CordicSlice.v"
 
@@ -7,7 +7,7 @@ module CordicInterativ(
     input  wire              rstn_i,
     input  wire              strb_data_valid_i,
     input  wire signed [9:0] X_i,
-    input  wire signed [9:0] Y_i,
+    input  wire signed [9:0] Y_i,  // not used (assumed 0)
     input  wire signed [9:0] Z_i,
     output wire signed [9:0] X_o,
     output wire signed [9:0] Y_o,
@@ -15,139 +15,147 @@ module CordicInterativ(
     output wire              strb_data_valid_o
 );
 
-// ------------------------- params -------------------------- //
+  // ------------------------- params --------------------------
+  localparam integer N_INT   = 0;
+  localparam integer N_FRAC  = -9;
+  localparam integer BITWIDTH= N_INT - N_FRAC + 1; // =10
 
-localparam integer N_INT             = 0;
-localparam integer N_FRAC            = -9;
-localparam integer BITWIDTH          = N_INT - N_FRAC + 1;
+  localparam integer CORDIC_MODE       = 0;  // 0=ROTATION
+  localparam integer COORDINATE_SYSTEM = 0;  // 0=CIRCULAR
 
-// Additional parameters for CORDIC mode and coordinate system: TODO
-localparam integer CORDIC_MODE       = 0;  // 0 = ROTATION, 1 = VECTORING
-localparam integer COORDINATE_SYSTEM = 0;  // 0 = CIRCULAR, 1 = LINEAR, 2 = HYPERBOLIC
+  // Verilog-2001 clog2
+  function integer clog2;
+    input integer value; integer v;
+    begin
+      v = value - 1; clog2 = 0;
+      while (v > 0) begin v = v >> 1; clog2 = clog2 + 1; end
+    end
+  endfunction
 
-localparam integer N_CORDIC_ITERATIONS   = BITWIDTH;           
-localparam integer SHIFT_VALUE_BITWIDTH  = $clog2(N_CORDIC_ITERATIONS + 1);
+  localparam integer N_CORDIC_ITERATIONS  = BITWIDTH;
+  localparam integer SHIFT_VALUE_BITWIDTH = clog2(N_CORDIC_ITERATIONS + 1);
 
-localparam signed [BITWIDTH-1:0] PI_HALF = 10'sb0100000000;
-localparam [N_CORDIC_ITERATIONS*BITWIDTH-1:0] ATAN_TABLE = {
-    10'b0000000000,  // entry 9
-    10'b0000000001,  // entry 8
-    10'b0000000001,  // entry 7
-    10'b0000000011,  // entry 6
-    10'b0000000101,  // entry 5
-    10'b0000001010,  // entry 4
-    10'b0000010100,  // entry 3
-    10'b0000101000,  // entry 2
-    10'b0001001100,  // entry 1
-    10'b0010000000   // entry 0
-};
+  localparam signed [BITWIDTH-1:0] PI_HALF = 10'sb0100000000;
+  localparam [N_CORDIC_ITERATIONS*BITWIDTH-1:0] ATAN_TABLE = {
+      10'b0000000000,  // 9
+      10'b0000000001,  // 8
+      10'b0000000001,  // 7
+      10'b0000000011,  // 6
+      10'b0000000101,  // 5
+      10'b0000001010,  // 4
+      10'b0000010100,  // 3
+      10'b0000101000,  // 2
+      10'b0001001100,  // 1
+      10'b0010000000   // 0
+  };
 
-function [BITWIDTH-1:0] atan_value;
+  function [BITWIDTH-1:0] atan_value;
     input integer i;
     begin
-        atan_value = ATAN_TABLE[(i+1)*BITWIDTH-1 -: BITWIDTH];
+      atan_value = ATAN_TABLE[(i+1)*BITWIDTH-1 -: BITWIDTH];
     end
-endfunction
+  endfunction
 
-// ------------------------- signals ------------------------- //
+  // ------------------------- signals -------------------------
+  // ROC inputs: only X,Z are latched (Y is known 0)
+  reg  signed [BITWIDTH-1:0] roc_in_X, roc_in_Z;
 
-// ROC stage
-reg  signed [BITWIDTH-1:0] roc_in_X, roc_in_Y, roc_in_Z;
-reg  signed [BITWIDTH-1:0] roc_out_X, roc_out_Y, roc_out_Z;
+  // First-cycle seeds (combinational)
+  reg  signed [BITWIDTH-1:0] seed_X, seed_Y, seed_Z;
 
-// CORDIC datapath
-reg  signed [BITWIDTH-1:0] cordic_in_X,  cordic_in_Y,  cordic_in_Z;
-wire signed [BITWIDTH-1:0] cordic_out_X, cordic_out_Y, cordic_out_Z;
+  // CORDIC datapath
+  reg  signed [BITWIDTH-1:0] cordic_in_X,  cordic_in_Y,  cordic_in_Z;
+  wire signed [BITWIDTH-1:0] cordic_out_X, cordic_out_Y, cordic_out_Z;
 
-reg  [SHIFT_VALUE_BITWIDTH-1:0] shift_value;
-wire signed [BITWIDTH-1:0] current_rotation_angle;
+  reg  [SHIFT_VALUE_BITWIDTH-1:0] shift_value;
+  wire signed [BITWIDTH-1:0]      current_rotation_angle;
 
-// ------------------------- ROC preprocessing ------------------------- //
-
-always @(posedge clk_i) begin
+  // ------------------------- ROC preprocessing -------------------------
+  // Latch only on new sample
+  always @(posedge clk_i) begin
     if (!rstn_i) begin
-        roc_in_X <= {BITWIDTH{1'b0}};
-        roc_in_Y <= {BITWIDTH{1'b0}};
-        roc_in_Z <= {BITWIDTH{1'b0}};
+      roc_in_X <= {BITWIDTH{1'b0}};
+      roc_in_Z <= {BITWIDTH{1'b0}};
     end else if (strb_data_valid_i) begin
-        roc_in_X <= X_i;
-        roc_in_Y <= Y_i;
-        roc_in_Z <= Z_i;
+      roc_in_X <= X_i;
+      roc_in_Z <= Z_i;
     end
-end
+  end
 
-always @(*) begin
+  // Since Y_i == 0:
+  //  Z >  +PI/2 : X=0,      Y= +X, Z-PI/2
+  //  Z <  -PI/2 : X=0,      Y= -X, Z+PI/2
+  //  else       : X= +X,    Y=  0, Z
+  always @* begin
     if (roc_in_Z > PI_HALF) begin
-        // Rotate (X,Y) by +90° -> subtract PI/2 from Z
-        roc_out_X = -roc_in_Y;
-        roc_out_Y =  roc_in_X;
-        roc_out_Z =  roc_in_Z - PI_HALF;
+      seed_X = {BITWIDTH{1'b0}};
+      seed_Y =  roc_in_X;
+      seed_Z =  roc_in_Z - PI_HALF;
     end else if (roc_in_Z < -PI_HALF) begin
-        // Rotate (X,Y) by -90° -> add PI/2 to Z
-        roc_out_X =  roc_in_Y;
-        roc_out_Y = -roc_in_X;
-        roc_out_Z =  roc_in_Z + PI_HALF;
+      seed_X = {BITWIDTH{1'b0}};
+      seed_Y = -roc_in_X;
+      seed_Z =  roc_in_Z + PI_HALF;
     end else begin
-        // Pass-through
-        roc_out_X = roc_in_X;
-        roc_out_Y = roc_in_Y;
-        roc_out_Z = roc_in_Z;
+      seed_X =  roc_in_X;
+      seed_Y = {BITWIDTH{1'b0}};
+      seed_Z =  roc_in_Z;
     end
-end
+  end
 
-// ------------------------- CORDIC slice ------------------------- //
+  // ------------------------- CORDIC slice -------------------------
+  CordicSlice #(
+      .N_INT(N_INT),
+      .N_FRAC(N_FRAC),
+      .CORDIC_MODE(CORDIC_MODE),
+      .COORDINATE_SYSTEM(COORDINATE_SYSTEM),
+      .SHIFT_BITWIDTH(SHIFT_VALUE_BITWIDTH)
+  ) slice (
+      .clk_i(clk_i),
+      .rstn_i(rstn_i),
+      .current_rotation_angle_i(current_rotation_angle),
+      .shift_value_i(shift_value),
+      .X_i(cordic_in_X),
+      .Y_i(cordic_in_Y),
+      .Z_i(cordic_in_Z),
+      .X_o(cordic_out_X),
+      .Y_o(cordic_out_Y),
+      .Z_o(cordic_out_Z)
+  );
 
-CordicSlice #(
-    .N_INT(N_INT),
-    .N_FRAC(N_FRAC),
-    .CORDIC_MODE(CORDIC_MODE),
-    .COORDINATE_SYSTEM(COORDINATE_SYSTEM),
-    .SHIFT_BITWIDTH(SHIFT_VALUE_BITWIDTH)
-) slice (
-    .clk_i(clk_i),
-    .rstn_i(rstn_i),
-    .current_rotation_angle_i(current_rotation_angle),
-    .shift_value_i(shift_value),
-    .X_i(cordic_in_X),
-    .Y_i(cordic_in_Y),
-    .Z_i(cordic_in_Z),
-    .X_o(cordic_out_X),
-    .Y_o(cordic_out_Y),
-    .Z_o(cordic_out_Z)
-);
+  // ------------------------- control & muxing -------------------------
+  // First-cycle select: cheaper as reduction NOR than wide equality
+  wire first = ~|shift_value;
 
-// ------------------------- control & muxing ------------------------- //
-
-// Datapath mux
-always @(*) begin
-    if (shift_value == 0) begin
-        cordic_in_X = roc_out_X;
-        cordic_in_Y = roc_out_Y;
-        cordic_in_Z = roc_out_Z;
+  always @* begin
+    if (first) begin
+      cordic_in_X = seed_X;
+      cordic_in_Y = seed_Y;  // derived from X only
+      cordic_in_Z = seed_Z;
     end else begin
-        cordic_in_X = cordic_out_X;
-        cordic_in_Y = cordic_out_Y;
-        cordic_in_Z = cordic_out_Z;
+      cordic_in_X = cordic_out_X;
+      cordic_in_Y = cordic_out_Y;
+      cordic_in_Z = cordic_out_Z;
     end
-end
+  end
 
-// Iteration counter (shift_value)
-always @(posedge clk_i) begin
+  // Iteration counter
+  always @(posedge clk_i) begin
     if (!rstn_i || strb_data_valid_i) begin
-        shift_value <= {SHIFT_VALUE_BITWIDTH{1'b0}};
+      shift_value <= {SHIFT_VALUE_BITWIDTH{1'b0}};
     end else if (shift_value != (N_CORDIC_ITERATIONS + 1)) begin
-        shift_value <= shift_value + 1'b1;
+      shift_value <= shift_value + 1'b1;
     end
-end
+  end
 
-// Current angle
-assign current_rotation_angle = (shift_value < N_CORDIC_ITERATIONS) ? atan_value(shift_value) : {BITWIDTH{1'b0}};
+  // Angle lookup and done strobe
+  assign current_rotation_angle = (shift_value < N_CORDIC_ITERATIONS)
+                                  ? atan_value(shift_value)
+                                  : {BITWIDTH{1'b0}};
 
-// Output strobe after final iteration
-assign strb_data_valid_o = (shift_value == N_CORDIC_ITERATIONS);
+  assign strb_data_valid_o = (shift_value == N_CORDIC_ITERATIONS);
 
-assign X_o = cordic_out_X;
-assign Y_o = cordic_out_Y;
-assign Z_o = cordic_out_Z;
+  assign X_o = cordic_out_X;
+  assign Y_o = cordic_out_Y;
+  assign Z_o = cordic_out_Z;
 
 endmodule
