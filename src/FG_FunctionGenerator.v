@@ -168,7 +168,7 @@ FG_Limiter #(.BITWIDTH (BITWIDTH), .DATA_COUNT(DATA_COUNT)) Limiter(
 
 // ----------------------- DATA VALID STRB-GEN ----------------------- //
 
-wire outValid_STRB;
+reg outValid_STRB;
 reg outValid_STRB_reg;
 reg [BITWIDTH-1:0] out_reg;
 
@@ -196,5 +196,6 @@ end
 
 assign outValid_STRB_o = outValid_STRB_reg;
 assign out_o = out_reg;
+
 
 endmodule
