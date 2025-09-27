@@ -18,7 +18,7 @@
 `include "FG_WaveformGen.v"
 `include "FG_Limiter.v"
 
-module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_PRESCALAR = 9, BITWIDTH_TIMER = 10, CONFIG_REG_BITWIDTH = 64)(
+module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_PRESCALAR = 6, BITWIDTH_TIMER = 8, CONFIG_REG_BITWIDTH = 56)(
     input wire clk_i,
     input wire rstn_i,
     input wire enable_i,
@@ -44,7 +44,6 @@ module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_PRESCALAR = 9, BI
 // Config Reg 1 list
 localparam CS_MODE_POS                 = 55;
 localparam MS_MODE_POS                 = 54;
-localparam RADIX_POS                   = 53;
 localparam TIMER_PRESCALER_POS         = 48;
 localparam TIMER_COUNTER_POS           = 40;
 localparam INIT_PHASE___ON_COUNTER_POS = 32;
@@ -56,7 +55,6 @@ localparam OFFSET_POS                  = 0;
 wire CS_Mode, MS_Mode, Radix;
 assign CS_Mode = CR_bus_i[CS_MODE_POS];
 assign MS_Mode = CR_bus_i[CS_MODE_POS] ^ CR_bus_i[MS_MODE_POS];
-assign Radix   = CR_bus_i[RADIX_POS];
 
 wire [BITWIDTH_PRESCALAR-1:0] timerPrescaler;
 assign timerPrescaler = CR_bus_i[TIMER_PRESCALER_POS+BITWIDTH_PRESCALAR-1:TIMER_PRESCALER_POS];
@@ -151,7 +149,7 @@ localparam DATA_COUNT = 3;
 localparam SIGNED_TO_UNSIGNED = 2 ** (BITWIDTH-1);
 
 wire [(DATA_COUNT*(BITWIDTH+1))-1:0] data;
-wire [BITWIDTH-1:0] out, out_signed, out_unsigned;
+wire [BITWIDTH-1:0] out;
 
 assign data[(0)*(BITWIDTH+1) +: BITWIDTH+1] = {1'b0, waveform};
 assign data[(1)*(BITWIDTH+1) +: BITWIDTH+1] = {{sine[BITWIDTH-1]}, sine}; 
@@ -176,12 +174,12 @@ reg [BITWIDTH-1:0] out_reg;
 
 always @(*) begin
     if (CS_Mode) begin
-        outValid_STRB <= clk_en;
+        outValid_STRB = clk_en;
     end else begin
         if(MS_Mode) begin
-            outValid_STRB <= strb_data_valid_cordic;
+            outValid_STRB = strb_data_valid_cordic;
         end else begin
-            outValid_STRB <= strb_data_valid_waveform;
+            outValid_STRB = strb_data_valid_waveform;
         end
     end
 end
@@ -191,13 +189,10 @@ always @ (posedge clk_i) begin
         out_reg <= {BITWIDTH{1'b0}};
         outValid_STRB_reg <= 1'b0;
     end else if(outValid_STRB) begin
-        out_reg <= (Radix)? out_unsigned : out_signed;
+        out_reg <= out;
         outValid_STRB_reg <= outValid_STRB;
     end
 end
-
-assign out_signed = out;
-assign out_unsigned = out + SIGNED_TO_UNSIGNED[BITWIDTH-1:0];
 
 assign outValid_STRB_o = outValid_STRB_reg;
 assign out_o = out_reg;
