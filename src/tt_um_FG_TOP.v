@@ -27,9 +27,9 @@ module tt_um_FG_TOP (
 );
 
 localparam BITWIDTH            = 8;
-localparam BITWIDTH_PRESCALAR  = 9;
-localparam BITWIDTH_TIMER      = 10;
-localparam CONFIG_REG_BITWIDTH = 64;
+localparam BITWIDTH_PRESCALAR  = 7;
+localparam BITWIDTH_TIMER      = 8;
+localparam CONFIG_REG_BITWIDTH = 56;
 localparam SYNC_STAGES         = 2;
 
 // ----------------------- CONFIGURATION REGISTER ----------------------- //
@@ -40,7 +40,7 @@ wire enable, enable_n;
 wire d_Valid_STRB;
 
 reg [7:0] CR0, CR1, CR2, CR3, CR4, CR5, CR6, CR7;
-wire [63:0] CR_bus;
+wire [55:0] CR_bus;
 
 assign enable = ~enable_n;
 
@@ -52,8 +52,7 @@ always @(posedge clk) begin
     CR3 <= 8'h00;
     CR4 <= 8'h00; 
     CR5 <= 8'h00; 
-    CR6 <= 8'h32; 
-    CR7 <= 8'h00;
+    CR6 <= 8'h32;
   end else if (!enable && !WR_enable_n) begin
     // write selected register
     case (uio_in[5:3]) 
@@ -64,13 +63,12 @@ always @(posedge clk) begin
       3'd4: CR4 <= ui_in;
       3'd5: CR5 <= ui_in;
       3'd6: CR6 <= ui_in;
-      3'd7: CR7 <= ui_in;
       default: /* no write */;
     endcase
   end
 end
 
-assign CR_bus = {CR0, CR1, CR2, CR3, CR4, CR5, CR6, CR7};
+assign CR_bus = {CR0, CR1, CR2, CR3, CR4, CR5, CR6};
 assign uio_oe = 8'b00000111; // upper 5 bits input (control and address input), lower 3 bits output (DAC control signals)
 
 // ----------------------- SYNCHRONIZER ----------------------- //

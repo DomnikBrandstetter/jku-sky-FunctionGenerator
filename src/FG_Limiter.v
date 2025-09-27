@@ -22,19 +22,9 @@ module FG_Limiter #(parameter BITWIDTH = 16, DATA_COUNT = 3)(
     output wire signed [BITWIDTH-1:0] out_o 
 );
 
-//Maximum and minimum values output
-// localparam signed MAX_VALUE =  (2 ** (BITWIDTH-1)) - 1;  
-// localparam signed MIN_VALUE = -(2 ** (BITWIDTH-1)); 
- 
-wire signed [BITWIDTH:0] result; 
-wire signed [BITWIDTH-1:0] limited_result;
+wire signed [BITWIDTH:0] result;
 
 assign result = data_i[(select_i)*(BITWIDTH+1) +: BITWIDTH+1] + {{{(1){offset_i[BITWIDTH-1]}}}, offset_i};
-
-// Limit MAX/MIN result values
-// assign limited_result  = (result >= MAX_VALUE) ? MAX_VALUE[BITWIDTH-1:0] :
-//                          (result <= MIN_VALUE) ? MIN_VALUE[BITWIDTH-1:0] :
-//                          result[BITWIDTH-1:0];
 
 // Enable Out
 assign out_o = (enable_i) ? result[BITWIDTH-1:0] : {(BITWIDTH){1'b0}};

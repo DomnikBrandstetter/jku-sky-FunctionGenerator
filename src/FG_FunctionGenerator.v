@@ -13,8 +13,8 @@
 // limitations under the License.
 
 `include "FG_Timer.v"
-//`include "../../cordic/rtl/CordicIterativ.v"
-`include "CordicIterativ.v"
+`include "../../cordic/rtl/CordicIterativ.v"
+//`include "CordicIterativ.v"
 `include "FG_WaveformGen.v"
 `include "FG_Limiter.v"
 
@@ -42,11 +42,11 @@ module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_PRESCALAR = 9, BI
 // ----------------------- CONSTANTS AND CONFIGURATION REGISTERS ----------------------- //
 
 // Config Reg 1 list
-localparam CS_MODE_POS                 = 63;
-localparam MS_MODE_POS                 = 62;
-localparam RADIX_POS                   = 61;
-localparam TIMER_PRESCALER_POS         = 52;
-localparam TIMER_COUNTER_POS           = 42;
+localparam CS_MODE_POS                 = 55;
+localparam MS_MODE_POS                 = 54;
+localparam RADIX_POS                   = 53;
+localparam TIMER_PRESCALER_POS         = 48;
+localparam TIMER_COUNTER_POS           = 40;
 localparam INIT_PHASE___ON_COUNTER_POS = 32;
 localparam RISE_SLOPE_POS              = 24;
 localparam FALL_SLOPE_POS              = 16;
@@ -100,21 +100,21 @@ FG_Timer #(.COUNTER_BITWIDTH (BITWIDTH_TIMER), .PSC_BITWIDTH (BITWIDTH_PRESCALAR
 
 // ----------------------- CORDIC ----------------------- //
 
-wire signed [9:0] x_initial;
-wire signed [9:0] sine_cordic;
+wire signed [7:0] x_initial;
+wire signed [7:0] sine_cordic;
 wire signed [BITWIDTH-1:0] sine;
 wire strb_data_valid_cordic;
-wire signed [9:0] X_out;
-wire signed [9:0] Z_out;
+wire signed [7:0] X_out;
+wire signed [7:0] Z_out;
 
-assign x_initial = { {2{amplitude[BITWIDTH-1]}}, amplitude };
+assign x_initial = amplitude;// { {2{amplitude[BITWIDTH-1]}}, amplitude };
 
 CordicInterativ #() Cordic (
     .clk_i (clk_i),
     .rstn_i (rstn_i),             
     .strb_data_valid_i(clk_en),
     .X_i (x_initial),
-    .Y_i (10'd0),
+    .Y_i (8'd0),
     .Z_i (counterValue),
     .Y_o (sine_cordic),
     .X_o (X_out),
@@ -170,17 +170,18 @@ FG_Limiter #(.BITWIDTH (BITWIDTH), .DATA_COUNT(DATA_COUNT)) Limiter(
 
 // ----------------------- DATA VALID STRB-GEN ----------------------- //
 
-reg outValid_STRB, outValid_STRB_reg;
+wire outValid_STRB;
+reg outValid_STRB_reg;
 reg [BITWIDTH-1:0] out_reg;
 
 always @(*) begin
     if (CS_Mode) begin
-        outValid_STRB_reg <= clk_en;
+        outValid_STRB <= clk_en;
     end else begin
         if(MS_Mode) begin
-            outValid_STRB_reg <= strb_data_valid_cordic;
+            outValid_STRB <= strb_data_valid_cordic;
         end else begin
-            outValid_STRB_reg <= strb_data_valid_waveform;
+            outValid_STRB <= strb_data_valid_waveform;
         end
     end
 end
@@ -188,16 +189,17 @@ end
 always @ (posedge clk_i) begin
     if (!rstn_i) begin
         out_reg <= {BITWIDTH{1'b0}};
+        outValid_STRB_reg <= 1'b0;
     end else if(outValid_STRB) begin
         out_reg <= (Radix)? out_unsigned : out_signed;
+        outValid_STRB_reg <= outValid_STRB;
     end
 end
 
 assign out_signed = out;
 assign out_unsigned = out + SIGNED_TO_UNSIGNED[BITWIDTH-1:0];
-assign outValid_STRB = (enable_i)? outValid_STRB_reg : 1'b0;
 
-assign outValid_STRB_o = outValid_STRB;
+assign outValid_STRB_o = outValid_STRB_reg;
 assign out_o = out_reg;
 
 endmodule
