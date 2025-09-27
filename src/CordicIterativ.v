@@ -35,7 +35,7 @@ module CordicInterativ(
   localparam integer N_CORDIC_ITERATIONS  = BITWIDTH;
   localparam integer SHIFT_VALUE_BITWIDTH = clog2(N_CORDIC_ITERATIONS + 1);
 
-  localparam signed [BITWIDTH-1:0] PI_HALF = 10'sb0100000000;
+  localparam signed [BITWIDTH-1:0] PI_HALF = 8'sb01000000;
   localparam [N_CORDIC_ITERATIONS*BITWIDTH-1:0] ATAN_TABLE = {
       8'b00000001,  // 7
       8'b00000011,  // 6
@@ -157,3 +157,4 @@ module CordicInterativ(
   assign Z_o = cordic_out_Z;
 
 endmodule
+
