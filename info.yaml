@@ -43,14 +43,14 @@ pinout:
   uo[7]: "DAC_OUT_7"
 
   # Bidirectional pins
-  uio[0]: "dac_clr_o (active low)"
-  uio[1]: "dac_pd_o (active low)"
-  uio[2]: "dac_wr_o (active low)"
-  uio[3]: "CONFIG ADDR_IN_0"
-  uio[4]: "CONFIG ADDR_IN_1"
-  uio[5]: "CONFIG ADDR_IN_2"
-  uio[6]: "WR_enable (active low)"
-  uio[7]: "Enable (active low)"
+  uio[0]: "dac_clr_OUT (active low)"
+  uio[1]: "dac_pd_OUT (active low)"
+  uio[2]: "dac_wr_OUT (active low)"
+  uio[3]: "CONFIG ADDR_0_IN"
+  uio[4]: "CONFIG ADDR_1_IN"
+  uio[5]: "CONFIG ADDR_2_IN"
+  uio[6]: "WR_enable_IN (active low)"
+  uio[7]: "Enable_IN (active low)"
 
 # Do not change!
 yaml_version: 6
