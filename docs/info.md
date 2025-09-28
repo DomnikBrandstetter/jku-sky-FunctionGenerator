@@ -61,7 +61,7 @@ Registers are packed into a 56‑bit bus `{CR0,CR1,CR2,CR3,CR4,CR5,CR6}` consume
 
 ```
 [55] Constant mode      1 = force constant (output = AMPLITUDE), ignores modulated path
-[54] Modulated sel.     0 = Waveform generator, 1 = CORDIC sine         (used when Constant=0)
+[54] Modulated sel.     0 = Waveform generator, 1 = CORDIC sine (used when Constant=0)
 [53:48] Prescaler       6‑bit value; divides the input clock for the timer time‑base
 ```
 
