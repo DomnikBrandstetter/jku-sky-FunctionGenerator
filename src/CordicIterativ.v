@@ -53,7 +53,7 @@ localparam [N_CORDIC_ITERATIONS*BITWIDTH-1:0] ATAN_TABLE = {
     8'b00100000}; // 0.250000 
 
 function [BITWIDTH-1:0] atan_value;
-    input integer i;
+    input [SHIFT_VALUE_BITWIDTH-1:0] i;
     begin
         atan_value = ATAN_TABLE[(i+1)*BITWIDTH-1 -: BITWIDTH];
     end

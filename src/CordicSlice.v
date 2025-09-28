@@ -59,54 +59,49 @@ assign Y_o = Y_r;
 assign Z_o = Z_r;
 
 // ------------------------------------ X ------------------------------------ //
-wire signed [BITWIDTH-1:0] dx_circ, dx_hyper;
-assign dx_circ  = dir_up ? -y_shr :  y_shr;
-assign dx_hyper = dir_up ?  y_shr : -y_shr;
+wire signed [BITWIDTH-1:0] dx;
+
+generate
+    if (COORDINATE_SYSTEM == 0) begin          : gen_circ // CIRCULAR (m = +1)
+        assign dx = sat_add(X_i, (dir_up)? -y_shr :  y_shr);
+    end else if (COORDINATE_SYSTEM == 1) begin : gen_lin  // LINEAR (m = 0)
+        assign dx = X_i;
+    end else if (COORDINATE_SYSTEM == 0) begin : gen_hyp  // HYPERBOLIC (m = -1)           
+        assign dx = sat_add(X_i, (dir_up)?  y_shr : -y_shr);
+    end
+endgenerate
 
 always @ (posedge clk_i) begin
     if (!rstn_i) begin
         X_r <= {BITWIDTH{1'b0}};
     end else begin
-        case (COORDINATE_SYSTEM)
-            0: begin // CIRCULAR (m = +1)
-                X_r <= sat_add(X_i, dx_circ);
-            end
-            1: begin // LINEAR (m = 0)
-                X_r <= X_i;
-            end
-            2: begin // HYPERBOLIC (m = -1)
-                X_r <= sat_add(X_i, dx_hyper);
-            end
-            default: begin
-                X_r <= X_i;
-            end
-        endcase
+        X_r <= dx;
     end
 end
 
 
 // ------------------------------------ Y ------------------------------------ //
 wire signed [BITWIDTH-1:0] dy;
-assign dy = dir_up ?  x_shr : -x_shr;
+assign dy = sat_add(Y_i, (dir_up)?  x_shr : -x_shr);
 
 always @ (posedge clk_i) begin
     if (!rstn_i) begin
         Y_r <= {BITWIDTH{1'b0}};
     end else begin
-        Y_r <= sat_add(Y_i, dy);
+        Y_r <= dy;
     end
 end
 
 
 // ------------------------------------ Z ------------------------------------ //
 wire signed [BITWIDTH-1:0] dz;
-assign dz = dir_up ? -current_rotation_angle_i : current_rotation_angle_i;
+assign dz = sat_add(Z_i, (dir_up)? -current_rotation_angle_i : current_rotation_angle_i);
 
 always @ (posedge clk_i) begin
     if (!rstn_i) begin
         Z_r <= {BITWIDTH{1'b0}};
     end else begin
-        Z_r <= sat_add(Z_i, dz);
+        Z_r <= dz;
     end
 end
 
