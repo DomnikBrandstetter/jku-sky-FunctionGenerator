@@ -65,8 +65,6 @@ Registers are packed into a 56‑bit bus `{CR0,CR1,CR2,CR3,CR4,CR5,CR6}` consume
 [53:48] Prescaler       6‑bit value; divides the input clock for the timer time‑base
 ```
 
-- **Prescaler** is combined with `CR1.Counter` inside `FG_Timer` to produce the **sample tick** (`clk_en`).
-
 ### CR1 — Timer Counter (address 1, reset `0x05`)
 
 ```
