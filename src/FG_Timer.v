@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 module FG_Timer #(parameter COUNTER_BITWIDTH = 10, PSC_BITWIDTH = 9)(
     input wire clk_i,
     input wire rstn_i,
@@ -55,7 +56,7 @@ always @(posedge clk_i) begin
     if (!rstn_i) begin
         counterValue <= 0;
     
-    end else if (clk_en && !enable_i) begin
+    end else if (!enable_i) begin
         if(timerMode_i) begin  // Timer Mode Overflow
             counterValue <= preload_i;
         end else begin         // Timer Mode Compare
@@ -78,6 +79,6 @@ always @(posedge clk_i) begin
 end 
 
 assign counterVal_o = counterValue;
-assign clk_en_o = (clk_en && enable_i)? 1'b1 : 1'b0;
+assign clk_en_o = (clk_en)? 1'b1 : 1'b0;
 
 endmodule

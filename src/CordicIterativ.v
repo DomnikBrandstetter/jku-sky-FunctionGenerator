@@ -1,4 +1,16 @@
-// CORDIC iterative architecture with pipelined CORDIC slices
+// Copyright 2025 Dominik Brandstetter
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE−2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 `include "CordicSlice.v"
 
@@ -28,6 +40,7 @@ localparam integer COORDINATE_SYSTEM = 0;  // 0 = CIRCULAR, 1 = LINEAR, 2 = HYPE
 localparam integer N_CORDIC_ITERATIONS   = BITWIDTH;           
 localparam integer SHIFT_VALUE_BITWIDTH  = $clog2(N_CORDIC_ITERATIONS + 1);
 
+//generate arctan lookup table from Matlab
 localparam signed [BITWIDTH-1:0] PI_HALF = 8'b01000000;
 localparam [N_CORDIC_ITERATIONS*BITWIDTH-1:0] ATAN_TABLE = {
     8'b00000000,  // 0.000000 
@@ -132,16 +145,16 @@ end
 always @(posedge clk_i) begin
     if (!rstn_i || strb_data_valid_i) begin
         shift_value <= {SHIFT_VALUE_BITWIDTH{1'b0}};
-    end else if (shift_value != (N_CORDIC_ITERATIONS + 1)) begin
+    end else if (shift_value != (N_CORDIC_ITERATIONS[SHIFT_VALUE_BITWIDTH-1:0] + 1)) begin
         shift_value <= shift_value + 1'b1;
     end
 end
 
 // Current angle
-assign current_rotation_angle = (shift_value < N_CORDIC_ITERATIONS) ? atan_value(shift_value) : {BITWIDTH{1'b0}};
+assign current_rotation_angle = (shift_value < N_CORDIC_ITERATIONS[SHIFT_VALUE_BITWIDTH-1:0]) ? atan_value(shift_value[SHIFT_VALUE_BITWIDTH-1:0]) : {BITWIDTH{1'b0}};
 
 // Output strobe after final iteration
-assign strb_data_valid_o = (shift_value == N_CORDIC_ITERATIONS);
+assign strb_data_valid_o = (shift_value == N_CORDIC_ITERATIONS[SHIFT_VALUE_BITWIDTH-1:0]);
 
 assign X_o = cordic_out_X;
 assign Y_o = cordic_out_Y;

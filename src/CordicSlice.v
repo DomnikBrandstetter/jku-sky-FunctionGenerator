@@ -1,4 +1,16 @@
-// CordicSlice.v  (pure Verilog-2001)
+// Copyright 2025 Dominik Brandstetter
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE−2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 module CordicSlice #(
     parameter integer N_INT            = 0,   // N_INT
@@ -47,8 +59,9 @@ assign Y_o = Y_r;
 assign Z_o = Z_r;
 
 // ------------------------------------ X ------------------------------------ //
-wire signed [BITWIDTH-1:0] dx_circ  = dir_up ? -y_shr :  y_shr;
-wire signed [BITWIDTH-1:0] dx_hyper = dir_up ?  y_shr : -y_shr;
+wire signed [BITWIDTH-1:0] dx_circ, dx_hyper;
+assign dx_circ  = dir_up ? -y_shr :  y_shr;
+assign dx_hyper = dir_up ?  y_shr : -y_shr;
 
 always @ (posedge clk_i) begin
     if (!rstn_i) begin
@@ -73,7 +86,8 @@ end
 
 
 // ------------------------------------ Y ------------------------------------ //
-wire signed [BITWIDTH-1:0] dy = dir_up ?  x_shr : -x_shr;
+wire signed [BITWIDTH-1:0] dy;
+assign dy = dir_up ?  x_shr : -x_shr;
 
 always @ (posedge clk_i) begin
     if (!rstn_i) begin
@@ -85,7 +99,8 @@ end
 
 
 // ------------------------------------ Z ------------------------------------ //
-wire signed [BITWIDTH-1:0] dz = dir_up ? -current_rotation_angle_i : current_rotation_angle_i;
+wire signed [BITWIDTH-1:0] dz;
+assign dz = dir_up ? -current_rotation_angle_i : current_rotation_angle_i;
 
 always @ (posedge clk_i) begin
     if (!rstn_i) begin

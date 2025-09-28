@@ -1,4 +1,4 @@
-// Copyright 2024 Dominik Brandstetter
+// Copyright 2025 Dominik Brandstetter
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,10 +13,8 @@
 // limitations under the License.
 
 `include "FG_Timer.v"
-//`include "../../cordic/rtl/CordicIterativ.v"
 `include "CordicIterativ.v"
 `include "FG_WaveformGen.v"
-`include "FG_Limiter.v"
 
 module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_PRESCALAR = 6, BITWIDTH_TIMER = 8, CONFIG_REG_BITWIDTH = 56)(
     input wire clk_i,
@@ -24,12 +22,11 @@ module FG_FunctionGenerator #(parameter BITWIDTH = 8, BITWIDTH_PRESCALAR = 6, BI
     input wire enable_i,
 
     input wire [CONFIG_REG_BITWIDTH-1:0] CR_bus_i,
-        // 63      -> constant signal  - BIT (0 = False    | 1 = True) 
-        // 62      -> modulated signal - BIT (0 = Waveform | 1 = Sine) 
-        // 61      -> Radix            - BIT (0 = Signed   | 1 = Unsigned)
-        // 60 - 52 -> Prescaler 
-        // 51 - 42 -> Counter Value
-        // 41 - 32 -> Initial phase for sine, ON-Counter for waveform generation
+        // 55      -> constant signal  - BIT (0 = False    | 1 = True) 
+        // 54      -> modulated signal - BIT (0 = Waveform | 1 = Sine) 
+        // 53 - 48 -> Prescaler 
+        // 47 - 40 -> Counter Value
+        // 39 - 32 -> Initial phase for sine, ON-Counter for waveform generation
         // 31 - 24 -> Rising slope for Waveform generation
         // 23 - 16 -> Falling slope for Waveform generation  
         // 15 - 8  -> Amplitude
@@ -134,6 +131,7 @@ wire strb_data_valid_waveform;
 FG_WaveformGen #(.COUNTER_BITWIDTH (BITWIDTH_TIMER), .WAVEFORM_BITWIDTH(BITWIDTH)) Wave(
     .clk_i (clk_i),
     .rstn_i (rstn_i),
+    .enable_i (enable_i),
     .strb_data_valid_i (clk_en),
 
     .counter_i (timerCounter), 
@@ -147,41 +145,22 @@ FG_WaveformGen #(.COUNTER_BITWIDTH (BITWIDTH_TIMER), .WAVEFORM_BITWIDTH(BITWIDTH
    .strb_data_valid_o(strb_data_valid_waveform) 
 );
 
-// ----------------------- LIMITER ----------------------- //
-
-localparam DATA_COUNT = 3;
-
-wire [(DATA_COUNT*(BITWIDTH))-1:0] data;
-wire [BITWIDTH-1:0] out;
-
-assign data[(0)*(BITWIDTH) +: BITWIDTH] = waveform;
-assign data[(1)*(BITWIDTH) +: BITWIDTH] = sine; 
-assign data[(2)*(BITWIDTH) +: BITWIDTH] = amplitude;
-
-FG_Limiter #(.BITWIDTH (BITWIDTH), .DATA_COUNT(DATA_COUNT)) Limiter(
-
-    .enable_i (enable_i),
-    .select_i ({CS_Mode, MS_Mode}),
-
-    .offset_i (offset), 
-    .data_i (data),     
-    
-    .out_o (out)
-);
-
-// ----------------------- DATA VALID STRB-GEN ----------------------- //
+// ----------------------- DATA VALID STRB-GEN AND OUTPUT-REG ----------------------- //
 
 reg outValid_STRB, outValid_STRB_reg;
-reg [BITWIDTH-1:0] out_reg;
+reg [BITWIDTH-1:0] result, out_reg;
 
 always @(*) begin
     if (CS_Mode) begin
         outValid_STRB = clk_en;
+        result = amplitude;
     end else begin
         if(MS_Mode) begin
             outValid_STRB = strb_data_valid_cordic;
+            result = sine;
         end else begin
             outValid_STRB = strb_data_valid_waveform;
+            result = waveform;
         end
     end
 end
@@ -191,12 +170,14 @@ always @ (posedge clk_i) begin
         out_reg <= {BITWIDTH{1'b0}};
         outValid_STRB_reg <= 1'b0;
     end else if(outValid_STRB) begin
-        out_reg <= out;
-        outValid_STRB_reg <= outValid_STRB;
+        out_reg <= result + offset;
+        outValid_STRB_reg <= 1'b1;
+    end else begin
+        outValid_STRB_reg <= 1'b0;
     end
 end
 
 assign outValid_STRB_o = outValid_STRB_reg;
-assign out_o = out_reg;
+assign out_o = (enable_i)? out_reg : {BITWIDTH{1'b0}};
 
 endmodule

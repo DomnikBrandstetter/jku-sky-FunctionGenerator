@@ -1,4 +1,4 @@
-// Copyright 2024 Dominik Brandstetter
+// Copyright 2025 Dominik Brandstetter
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ module FG_WaveformGen #(
 )(
     input  wire                          clk_i,
     input  wire                          rstn_i,
+    input  wire                          enable_i,
 
     input  wire                          strb_data_valid_i,
     input  wire [COUNTER_BITWIDTH-1:0]   counter_i,        // period T
@@ -42,53 +43,62 @@ reg [BITWIDTH-1:0] val;
 assign out_o = val;
 
 always @(posedge clk_i) begin
-    if (!rstn_i) begin
+    if (!rstn_i || !enable_i) begin
         state <= IDLE;
-
     end else if(strb_data_valid_i) begin
         case(state)
         IDLE: begin
             if(counterValue_i == 0) begin
                 state <= RISE;
             end
-        end 
-        RISE: begin
-            if(counterValue_i == ON_counter_i) begin
-                state <= FALL;
-            end else if(val == amplitude_i) begin
-                state <= ON;
-            end else if(counterValue_i == counter_i) begin
-                state <= IDLE;
-            end
         end
-        ON: begin
-            if(counterValue_i == 0) begin
-                state <= RISE;
+        RISE: begin
+            if(counterValue_i != ON_counter_i) begin
+                if(val == amplitude_i) begin
+                    state <= ON;
+                end else if(counterValue_i == counter_i) begin
+                    state <= IDLE;
+                end
             end else if(counterValue_i == ON_counter_i) begin
                 state <= FALL;
             end
         end
-        FALL: begin
-            if(counterValue_i == 0) begin
-                state <= RISE;
-            end else if (val == 0) begin
-                state <= IDLE;
+        ON: begin
+            if(counterValue_i != 0) begin
+                if(counterValue_i == ON_counter_i) begin
+                    state <= FALL;
+                end
+                end else if(counterValue_i == 0) begin
+                    state <= RISE;
             end
         end
-        default: state <= IDLE;
+        FALL: begin
+            if(counterValue_i != 0) begin
+                if(val == 0) begin
+                    state <= IDLE;
+                end
+            end else if(counterValue_i == 0) begin
+                state <= RISE;
+            end
+        end
+            default: state <= IDLE;
         endcase
     end
 end
 
 // ----------------------- VALUE UPDATE ----------------------- //
 wire [WAVEFORM_BITWIDTH-1:0] step;
-assign step = sat_add_cap(val, ((state == RISE)? k_rise_i : k_fall_i), amplitude_i, ((state == RISE)? 1'b0 : 1'b1)); 
+assign step = sat_add_u(val, ((state == RISE)? k_rise_i : k_fall_i), amplitude_i, ((state == RISE)? 1'b0 : 1'b1)); 
 
 always @(posedge clk_i) begin
     if (!rstn_i) begin
         val <= {BITWIDTH{1'b0}};
-    end else if(strb_data_valid_i) begin
-        val <= (state == IDLE) ? {BITWIDTH{1'b0}} : step;
+    end else if (state == IDLE) begin
+        val <= {BITWIDTH{1'b0}};
+    end else if (state == RISE || state == FALL) begin
+        if(strb_data_valid_i) begin
+            val <= (state == IDLE) ? {BITWIDTH{1'b0}} : step;
+        end
     end
 end
 
@@ -101,7 +111,7 @@ end
 assign strb_data_valid_o = strb_data_valid_reg;
 
 // ----------------------- UNSIGNED SATURATION ADD FUNCTION ----------------------- //
-function [BITWIDTH-1:0] sat_add_cap;
+function [BITWIDTH-1:0] sat_add_u;
     input [BITWIDTH-1:0] a;
     input [BITWIDTH-1:0] b;
     input [BITWIDTH-1:0] upper;
@@ -118,14 +128,14 @@ begin
     if (!is_sub) begin
         // ADD: if carry-out -> overflow -> clamp to upper
         if (s[BITWIDTH]) begin
-            sat_add_cap = upper;
+            sat_add_u = upper;
         end else begin
             // Check if sum >= upper using (sum - upper); carry==1 means no borrow
             cmp = {1'b0, s[BITWIDTH-1:0]} + {1'b0, ~upper} + {{BITWIDTH{1'b0}}, 1'b1};
-            sat_add_cap = cmp[BITWIDTH] ? upper : s[BITWIDTH-1:0];
+            sat_add_u = cmp[BITWIDTH] ? upper : s[BITWIDTH-1:0];
         end
     end else begin
-        sat_add_cap = s[BITWIDTH] ? s[BITWIDTH-1:0] : {BITWIDTH{1'b0}};
+        sat_add_u = s[BITWIDTH] ? s[BITWIDTH-1:0] : {BITWIDTH{1'b0}};
     end
 end
 endfunction
