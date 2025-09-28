@@ -90,7 +90,7 @@ Registers are packed into a 56‑bit bus `{CR0,CR1,CR2,CR3,CR4,CR5,CR6}` consume
 ### CR4 — Waveform FALL Step (address 4, reset `0x00`)
 
 ```
-[23:16] k_fall          unsigned step subtracted per tick during FALL (Sets how fast the trapezoid falls from AMPLITUDE back to 0)
+[23:16] k_fall          unsigned step subtracted per tick during FALL (Sets how fast the trapezoid falls from AMPLITUDE to 0)
 ```
 
 ### CR5 — Amplitude (address 5, reset `0x32`)
