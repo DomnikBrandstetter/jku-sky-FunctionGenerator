@@ -47,12 +47,12 @@ assign enable = ~enable_n;
 always @(posedge clk) begin
   if (!rst_n) begin 
     CR0 <= 8'h54;   
-    CR1 <= 8'h10; 
+    CR1 <= 8'h05; 
     CR2 <= 8'h00; 
     CR3 <= 8'h00;
     CR4 <= 8'h00; 
     CR5 <= 8'h32;  
-    CR6 <= 8'h80;
+    CR6 <= 8'h00;
   end else if (!enable && !WR_enable_n) begin
     // write selected register
     case (uio_in[5:3]) 
@@ -107,6 +107,5 @@ assign uio_out[4] = 1'd0;
 assign uio_out[5] = 1'd0;
 assign uio_out[6] = 1'd0;
 assign uio_out[7] = 1'd0;
-
 
 endmodule
