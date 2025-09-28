@@ -78,7 +78,7 @@ Registers are packed into a 56‑bit bus `{CR0,CR1,CR2,CR3,CR4,CR5,CR6}` consume
 ```
 [39:32] Initial phase / ON duration
            • In Sine mode: Initial phase preload.
-           • In Waveform mode: ON duration in ticks (time spent at peak between RISE and FALL)
+           • In Waveform mode: ON duration in ticks (RISE + ON)
 ```
 
 - **Sine:** the internal phase accumulator is initialized with this byte.
