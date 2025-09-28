@@ -77,28 +77,21 @@ Registers are packed into a 56‑bit bus `{CR0,CR1,CR2,CR3,CR4,CR5,CR6}` consume
 
 ```
 [39:32] Initial phase / ON duration
-           • In Sine mode: Initial phase preload.
-           • In Waveform mode: ON duration in ticks (RISE + ON)
+           • In Sine mode: Initial phase preload. (The internal phase accumulator is initialized with this byte)
+           • In Waveform mode: ON duration in ticks (RISE + ON → number of sample ticks before falling)
 ```
-
-- **Sine:** the internal phase accumulator is initialized with this byte.
-- **Waveform:** number of sample ticks before falling.
 
 ### CR3 — Waveform RISE Step (address 3, reset `0x00`)
 
 ```
-[31:24] k_rise          unsigned step added per tick during RISE
+[31:24] k_rise          unsigned step added per tick during RISE (Sets how fast the trapezoid rises from 0 to AMPLITUDE)
 ```
-
-- Sets how fast the trapezoid rises from 0 to AMPLITUDE.
 
 ### CR4 — Waveform FALL Step (address 4, reset `0x00`)
 
 ```
-[23:16] k_fall          unsigned step subtracted per tick during FALL
+[23:16] k_fall          unsigned step subtracted per tick during FALL (Sets how fast the trapezoid falls from AMPLITUDE back to 0)
 ```
-
-- Sets how fast the trapezoid falls from AMPLITUDE back to 0.
 
 ### CR5 — Amplitude (address 5, reset `0x32`)
 
