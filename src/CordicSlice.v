@@ -66,7 +66,7 @@ generate
         assign dx = sat_add(X_i, (dir_up)? -y_shr :  y_shr);
     end else if (COORDINATE_SYSTEM == 1) begin : gen_lin  // LINEAR (m = 0)
         assign dx = X_i;
-    end else if (COORDINATE_SYSTEM == 0) begin : gen_hyp  // HYPERBOLIC (m = -1)           
+    end else if (COORDINATE_SYSTEM == 2) begin : gen_hyp  // HYPERBOLIC (m = -1)           
         assign dx = sat_add(X_i, (dir_up)?  y_shr : -y_shr);
     end
 endgenerate
