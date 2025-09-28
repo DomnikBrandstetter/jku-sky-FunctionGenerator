@@ -69,16 +69,16 @@ Registers are packed into a 56‑bit bus `{CR0,CR1,CR2,CR3,CR4,CR5,CR6}` consume
 
 ```
 [47:40] Counter value    
-           • In **Sine** mode: this is the **phase increment** per sample tick (frequency control).
-           • In **Waveform** mode: this sets the period that is used for the RISE/ON/FALL FSM.
+           • In Sine mode: this is the **phase increment** per sample tick (frequency control).
+           • In Waveform mode: this sets the period that is used for the RISE/ON/FALL FSM.
 ```
 
 ### CR2 — Phase / ON‑Duration (address 2, reset `0x00`)
 
 ```
 [39:32] Initial phase / ON duration
-           • In **Sine** mode: Initial phase preload.
-           • In **Waveform** mode: ON duration in ticks (time spent at peak between RISE and FALL)
+           • In Sine mode: Initial phase preload.
+           • In Waveform mode: ON duration in ticks (time spent at peak between RISE and FALL)
 ```
 
 - **Sine:** the internal phase accumulator is initialized with this byte.
