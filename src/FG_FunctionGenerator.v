@@ -52,7 +52,7 @@ localparam FALL_SLOPE_POS              = 16;
 localparam AMPLITUDE_POS               = 8;
 localparam OFFSET_POS                  = 0;
 
-wire CS_Mode, MS_Mode, Radix;
+wire CS_Mode, MS_Mode;
 assign CS_Mode = CR_bus_i[CS_MODE_POS];
 assign MS_Mode = CR_bus_i[CS_MODE_POS] ^ CR_bus_i[MS_MODE_POS];
 

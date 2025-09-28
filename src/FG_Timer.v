@@ -26,9 +26,6 @@ module FG_Timer #(parameter COUNTER_BITWIDTH = 10, PSC_BITWIDTH = 9)(
     output wire clk_en_o
 );
 
-localparam INIT = 1'b0;
-localparam RUN  = 1'b1;
-
 wire clk_en;
 
 reg [PSC_BITWIDTH-1:0] PSC_Value;

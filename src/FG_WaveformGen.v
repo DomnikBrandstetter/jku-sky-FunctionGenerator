@@ -86,7 +86,7 @@ assign step = sat_add_cap(val, ((state == RISE)? k_rise_i : k_fall_i), amplitude
 
 always @(posedge clk_i) begin
     if (!rstn_i) begin
-        val <= {BITWIDTH-1{1'b0}};
+        val <= {BITWIDTH{1'b0}};
     end else if(strb_data_valid_i) begin
         val <= (state == IDLE) ? {BITWIDTH{1'b0}} : step;
     end
