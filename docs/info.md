@@ -22,7 +22,7 @@ A compact, **programmable 8‑bit function generator** for TinyTapeout. It can o
 | `ui_in[7:0]`      | in  | 8     | Register **data bus** (write‑only).                                     |
 | `uo_out[7:0]`     | out | 8     | **DAC data** (parallel 8‑bit).                                          |
 | `uio_in[7]`       | in  | 1     | **ENABLE\_n** (active low). Must be low to run; high to halt/writable.  |
-| `uio_in[6]`       | in  | 1     | **WR\_n** (active low) – strobe to write selected register.             |
+| `uio_in[6]`       | in  | 1     | **WR\_n** (active low) – enable to write selected register.             |
 | `uio_in[5:3]`     | in  | 3     | **ADDR[2:0]** – selects config register (0..6).                         |
 | `uio_out[0]`      | out | 1     | **dac\_clr\_n** (active low) – forwarded reset for AD5330.              |
 | `uio_out[1]`      | out | 1     | **dac\_pd\_n** (active low) – power‑down (1 = enabled).                 |
