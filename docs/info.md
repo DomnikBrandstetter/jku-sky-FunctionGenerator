@@ -1,19 +1,9 @@
 # TinyTapeout: 8-bit Function Generator  
 **Module:** `tt_um_FG_TOP_Dominik_Brandstetter`
 
-A **tiny, punchy, programmable 8-bit function generator** for TinyTapeout. Spits out **DC**, **CORDIC sine**, or a **trapezoid/pulse** (rise → hold → fall). Driven by an on-chip **timer + prescaler**. Dead-simple **write-only register interface**. Parallel 8-bit out to your DAC.
+A compact, **programmable 8-bit function generator** for TinyTapeout. It outputs either a **constant DC level**, a **CORDIC-based sine**, or a **programmable trapezoid/pulse** (rise–hold–fall). A tiny on-chip timer with prescaler drives sample timing. Configuration uses TinyTapeout GPIOs via a simple write-only register interface. The 8-bit output feeds an external DAC or resistor ladder.
 
 > **Target DAC:** Analog Devices **AD5330** (parallel, 8-bit).
-
----
-
-## ⚡ Quick Glance (TL;DR)
-
-- **Modes:** Constant • **Sine (CORDIC)** • **Trapezoid/Pulse**  
-- **Timing:** On-chip **Timer + Prescaler**  
-- **Control:** **7×8-bit** write-only registers via TT GPIO  
-- **Output:** 8-bit parallel → e.g., **AD5330**  
-- **Power-on Default:** **~20 kHz sine** (from reset values)
 
 ---
 
@@ -105,28 +95,25 @@ A **tiny, punchy, programmable 8-bit function generator** for TinyTapeout. Spits
 ### CR6 — Offset (addr 6, reset `0x00`)
 ```
 [7:0]   OFFSET      signed (two’s complement) post-add
+        • Overflow wraps (no saturation)
 ```
-
-> **Math:** `out = selected_result + OFFSET` (8-bit). **Overflow wraps** (no saturation).
-
----
 
 ## 🎛️ Mode Recipes
 
 **Sine (default)**
 - Ensure `CR0[55]=0`, `CR0[54]=1`.  
-- Set **frequency**: coarse with `Prescaler` (`CR0[53:48]`), fine with `Counter` (`CR1`).  
+- Set **frequency**: with `Prescaler` (`CR0[53:48]`), and with `Counter` (`CR1`).  
 - Set **level**: `AMPLITUDE` (`CR5`) + `OFFSET` (`CR6`).
 
 **Constant (DC)**
 - Set `CR0[55]=1`.  
-- Output = `AMPLITUDE` + `OFFSET`.
+- Set **level**: `AMPLITUDE` (`CR5`) + `OFFSET` (`CR6`).
 
 **Trapezoid / Pulse**
 - Set `CR0[55]=0`, `CR0[54]=0`.  
 - Shape with `k_rise` (`CR3`), `ON duration` (`CR2`), `k_fall` (`CR4`).  
 - Timing base: `Prescaler` (`CR0`) + `Counter` (`CR1`).  
-- Level: `AMPLITUDE` (`CR5`) + `OFFSET` (`CR6`).
+- Set **level**: `AMPLITUDE` (`CR5`) + `OFFSET` (`CR6`).
 
 ---
 
@@ -148,13 +135,5 @@ A **tiny, punchy, programmable 8-bit function generator** for TinyTapeout. Spits
 - Only **write while halted** (`ENABLE_n=1`) → glitch-free updates.  
 - Use **Prescaler first (coarse)**, then **Counter (fine)** for frequency dialing.  
 - Leave **headroom**: `AMPLITUDE + OFFSET` must fit 8-bit (wraps otherwise).
-
----
-
-## 🔍 What Happens Internally
-
-- On reset, registers load defaults; core stays **idle** (`ENABLE_n=1`).  
-- When running, new samples auto-pulse `dac_wr_n`.  
-- `dac_clr_n` tracks reset; `dac_pd_n` tracks enable; unused `uio_out[7:3]` are tied low.
 
 ---
