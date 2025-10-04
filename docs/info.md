@@ -1,9 +1,9 @@
 # TinyTapeout: 8-bit Function Generator  
 **Module:** `tt_um_FG_TOP_Dominik_Brandstetter`
 
-A **tiny, punchy, programmable 8-bit function generator** for TinyTapeout. Spits out **DC**, **CORDIC sine**, or a **trapezoid/pulse** (rise → hold → fall). Driven by an on-chip **timer + prescaler**. Dead-simple **write-only register interface**. Parallel 8-bit out to your DAC or R-2R ladder.
+A **tiny, punchy, programmable 8-bit function generator** for TinyTapeout. Spits out **DC**, **CORDIC sine**, or a **trapezoid/pulse** (rise → hold → fall). Driven by an on-chip **timer + prescaler**. Dead-simple **write-only register interface**. Parallel 8-bit out to your DAC.
 
-> **Target DAC:** Analog Devices **AD5330** (parallel, 8-bit). Control lines on `uio_out[2:0]` (all **active-low**).
+> **Target DAC:** Analog Devices **AD5330** (parallel, 8-bit).
 
 ---
 
@@ -39,8 +39,6 @@ A **tiny, punchy, programmable 8-bit function generator** for TinyTapeout. Spits
 | `uio_out[0]`   | out | 1 | **dac_clr_n** → AD5330 `/CLR` |
 | `uio_out[1]`   | out | 1 | **dac_pd_n** → AD5330 power-down (**high = enabled**) |
 | `uio_out[2]`   | out | 1 | **dac_wr_n** → AD5330 `/WR` pulse on new sample |
-| `uio_out[7:3]` | out | 5 | Unused (low) |
-| `uio_oe`       | out | 8 | `8'b0000_0111` (only `uio[2:0]` are outputs) |
 | `clk`          | in  | 1 | System clock |
 | `rst_n`        | in  | 1 | Async reset (active-low) |
 | `ena`          | in  | 1 | Always `1` on TinyTapeout |
