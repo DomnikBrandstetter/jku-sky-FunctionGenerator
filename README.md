@@ -62,9 +62,3 @@ _Minimal DAC control exposed on `uio_out[2:0]`: `dac_wr_n`, `dac_pd_n` (high = e
 > If your board exposes `/CS` or `LDAC`, hard‑wire them.
 
 ---
-
-## ✅ Notes
-- All DAC control lines are **active‑low**.
-- **Write only while halted** to avoid glitches.
-- Dial frequency: **Prescaler (coarse)** → **Counter (fine)**.
-- Keep headroom: **Amplitude + Offset** must fit 8‑bit.
