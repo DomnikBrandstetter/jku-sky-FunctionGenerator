@@ -10,32 +10,58 @@ Tiny Tapeout is an educational project that aims to make it easier and cheaper t
 
 To learn more and get started, visit https://tinytapeout.com.
 
-## Set up your Verilog project
+# TinyTapeout: 8-bit Function Generator
+**Module:** `tt_um_FG_TOP_Dominik_Brandstetter`
 
-1. Add your Verilog files to the `src` folder.
-2. Edit the [info.yaml](info.yaml) and update information about your project, paying special attention to the `source_files` and `top_module` properties. If you are upgrading an existing Tiny Tapeout project, check out our [online info.yaml migration tool](https://tinytapeout.github.io/tt-yaml-upgrade-tool/).
-3. Edit [docs/info.md](docs/info.md) and add a description of your project.
-4. Adapt the testbench to your design. See [test/README.md](test/README.md) for more information.
+A compact, **programmable 8‑bit function generator** for TinyTapeout. Outputs **DC**, **CORDIC sine**, or **trapezoid/pulse** (rise–hold–fall). Sampling is driven by an on‑chip **timer + prescaler**. Configure via a simple **write‑only 7×8‑bit register map** over TT GPIO. The 8‑bit parallel output feeds an external DAC (e.g., **AD5330**) or an R‑2R ladder.
 
-The GitHub action will automatically build the ASIC files using [LibreLane](https://www.zerotoasiccourse.com/terminology/librelane/).
+---
 
-## Enable GitHub actions to build the results page
+## 🚀 Quick Start
+1. **Wire the DAC** (see *AD5330 Hookup*).
+2. Power up with **`ENABLE_n=1`** (halted).
+3. (Optional) Program **`CR0..CR6`** while halted.
+4. Drive **`ENABLE_n=0`** → generator runs (default: **~20 kHz sine**).
 
-- [Enabling GitHub Pages](https://tinytapeout.com/faq/#my-github-action-is-failing-on-the-pages-part)
+**Write protocol:** While **halted** (`ENABLE_n=1`), assert **`WR_n=0` for ≥3 clocks** with stable `ADDR` + `DATA`. Then release `WR_n` and set **`ENABLE_n=0`** to run.
 
-## Resources
+---
 
-- [FAQ](https://tinytapeout.com/faq/)
-- [Digital design lessons](https://tinytapeout.com/digital_design/)
-- [Learn how semiconductors work](https://tinytapeout.com/siliwiz/)
-- [Join the community](https://tinytapeout.com/discord)
-- [Build your design locally](https://www.tinytapeout.com/guides/local-hardening/)
+## ✨ Features
+- 3 modes: **Constant**, **Sine (CORDIC)**, **Trapezoid/Pulse**
+- **Timer + Prescaler** timebase
+- **7×8‑bit** write‑only config
+- **8‑bit parallel** DAC output
+- Default on reset: **sine ~20 kHz**
 
-## What next?
+---
 
-- [Submit your design to the next shuttle](https://app.tinytapeout.com/).
-- Edit [this README](README.md) and explain your design, how it works, and how to test it.
-- Share your project on your social network of choice:
-  - LinkedIn [#tinytapeout](https://www.linkedin.com/search/results/content/?keywords=%23tinytapeout) [@TinyTapeout](https://www.linkedin.com/company/100708654/)
-  - Mastodon [#tinytapeout](https://chaos.social/tags/tinytapeout) [@matthewvenn](https://chaos.social/@matthewvenn)
-  - X (formerly Twitter) [#tinytapeout](https://twitter.com/hashtag/tinytapeout) [@tinytapeout](https://twitter.com/tinytapeout)
+## 🧰 Top‑Level I/O
+| Signal | Dir | W | Purpose |
+|---|---:|---:|---|
+| `ui_in[7:0]` | in | 8 | Register **data bus** (write‑only) |
+| `uo_out[7:0]` | out | 8 | **DAC data** |
+| `uio_in[7]` | in | 1 | **ENABLE_n** (Low = run, High = halt/program) |
+| `uio_in[6]` | in | 1 | **WR_n** (active‑low write strobe) |
+| `uio_in[5:3]` | in | 3 | **ADDR[2:0]** (select `CR0..CR6`) |
+| `clk` | in | 1 | System clock |
+| `rst_n` | in | 1 | Async reset (active‑low) |
+| `ena` | in | 1 | Always `1` on TinyTapeout |
+
+_Minimal DAC control exposed on `uio_out[2:0]`: `dac_wr_n`, `dac_pd_n` (high = enabled), `dac_clr_n`._
+
+---
+
+## 🔌 AD5330 Hookup (Minimal)
+- **Data:** `uo_out[7:0]` → AD5330 `DB[7:0]`
+- **Control:** `uio_out[2] → /WR`, `uio_out[1] → PD_n` (**high = enabled**), `uio_out[0] → /CLR` (**high** normal)
+
+> If your board exposes `/CS` or `LDAC`, hard‑wire them.
+
+---
+
+## ✅ Notes
+- All DAC control lines are **active‑low**.
+- **Write only while halted** to avoid glitches.
+- Dial frequency: **Prescaler (coarse)** → **Counter (fine)**.
+- Keep headroom: **Amplitude + Offset** must fit 8‑bit.
