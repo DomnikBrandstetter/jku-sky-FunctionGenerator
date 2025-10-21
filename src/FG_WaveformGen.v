@@ -111,30 +111,30 @@ end
 assign strb_data_valid_o = strb_data_valid_reg;
 
 // ----------------------- UNSIGNED SATURATION ADD FUNCTION ----------------------- //
-function [BITWIDTH-1:0] sat_add_u;
+function automatic [BITWIDTH-1:0] sat_add_u;
     input [BITWIDTH-1:0] a;
     input [BITWIDTH-1:0] b;
     input [BITWIDTH-1:0] upper;
-    input                is_sub;             // 0 = ADD, 1 = SUB
+    input                is_sub;   // 0 = ADD, 1 = SUB
 
-    reg  [BITWIDTH-1:0] b_eff;               // b after conditional invert
-    reg  [BITWIDTH:0]   s;                   // adder with carry-out (single adder)
-    reg  [BITWIDTH:0]   cmp;                 // (sum - upper) as add(~upper) + 1
+    reg  [BITWIDTH-1:0] b_eff;
+    reg  [BITWIDTH:0]   s;
 begin
-    // Single adder arithmetic: a + (b ^ is_sub) + is_sub
+    // a + (b ^ is_sub) + is_sub  => add / sub in einem Adder
     b_eff = b ^ {BITWIDTH{is_sub}};
     s     = {1'b0, a} + {1'b0, b_eff} + {{BITWIDTH{1'b0}}, is_sub};
 
     if (!is_sub) begin
-        // ADD: if carry-out -> overflow -> clamp to upper
+        // ADD: Carry-out => Overflow => clamp to upper
         if (s[BITWIDTH]) begin
             sat_add_u = upper;
+        end else if (s[BITWIDTH-1:0] >= upper) begin
+            sat_add_u = upper;
         end else begin
-            // Check if sum >= upper using (sum - upper); carry==1 means no borrow
-            cmp = {1'b0, s[BITWIDTH-1:0]} + {1'b0, ~upper} + {{BITWIDTH{1'b0}}, 1'b1};
-            sat_add_u = cmp[BITWIDTH] ? upper : s[BITWIDTH-1:0];
+            sat_add_u = s[BITWIDTH-1:0];
         end
     end else begin
+        // SUB: Borrow (carry=0) => clamp to 0
         sat_add_u = s[BITWIDTH] ? s[BITWIDTH-1:0] : {BITWIDTH{1'b0}};
     end
 end

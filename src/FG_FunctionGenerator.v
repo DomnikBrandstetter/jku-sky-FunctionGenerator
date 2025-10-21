@@ -107,7 +107,7 @@ wire strb_data_valid_cordic;
 assign y_initial = 8'd0;
 assign x_initial = amplitude;
 
-CordicInterativ #() Cordic (
+CordicInterativ Cordic (
     .clk_i (clk_i),
     .rstn_i (rstn_i),             
     .strb_data_valid_i(clk_en),
@@ -120,7 +120,7 @@ CordicInterativ #() Cordic (
     .strb_data_valid_o(strb_data_valid_cordic)
 );
 
-assign sine = sine_cordic + SIGNED_TO_UNSIGNED;
+assign sine = sine_cordic + SIGNED_TO_UNSIGNED[BITWIDTH-1:0];
 
 // ----------------------- WAVEFORM ----------------------- //
 // is used to generate different waveforms (e.g. triangle, sawtooth, rectangle) with a given amplitude and rise/fall slope
