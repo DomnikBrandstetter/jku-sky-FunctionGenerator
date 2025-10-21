@@ -52,15 +52,15 @@ A compact, **programmable 8-bit function generator** for TinyTapeout. It outputs
 | 7..0   | CR6 | **Offset** (added after selection) |
 
 **Reset defaults:**  
-`CR0=0x54`, `CR1=0x05`, `CR2=0x00`, `CR3=0x00`, `CR4=0x00`, `CR5=0x32`, `CR6=0x00`.
+`CR0=0x49`, `CR1=0x05`, `CR2=0x00`, `CR3=0x00`, `CR4=0x00`, `CR5=0x32`, `CR6=0x00`.
 
 ---
 
-### CR0 — Mode & Prescaler (addr 0, reset `0x54`)
+### CR0 — Mode & Prescaler (addr 0, reset `0x49`)
 ```
 [55] Constant mode    1 → output = AMPLITUDE (modulated path ignored)
 [54] Mod select       0 → Waveform, 1 → CORDIC sine
-[53:48] Prescaler     6-bit timer divider (coarse timebase)
+[53:48] Prescaler     6-bit timer divider (timebase=100kHz @1MHz clock_i)
 ```
 
 ### CR1 — Timer Counter (addr 1, reset `0x05`)
