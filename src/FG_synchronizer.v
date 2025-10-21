@@ -24,7 +24,7 @@ module FG_Synchronizer #(parameter STAGES = 2)(
     always @(posedge clk_i) begin
 
         if (!rstn_i) begin
-            sync_regs[0] <= 0;
+            sync_regs[0] <= 1'b1;
         end else begin
             sync_regs[0] <= async_i; 
         end

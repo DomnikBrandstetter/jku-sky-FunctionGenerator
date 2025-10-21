@@ -46,7 +46,7 @@ assign enable = ~enable_n;
 
 always @(posedge clk) begin
   if (!rst_n) begin 
-    CR0 <= 8'h54;   
+    CR0 <= 8'h49;
     CR1 <= 8'h05; 
     CR2 <= 8'h00; 
     CR3 <= 8'h00;
@@ -73,7 +73,7 @@ assign uio_oe = 8'b00000111; // upper 5 bits input (control and address input), 
 
 // ----------------------- SYNCHRONIZER ----------------------- //
 
-FG_Synchronizer #(.STAGES (SYNC_STAGES)) WR_Enable(
+FG_Synchronizer #(.STAGES (SYNC_STAGES+1)) WR_Enable(
     .clk_i (clk),
     .rstn_i (rst_n),       
     .async_i (uio_in[6]),      
@@ -100,8 +100,8 @@ FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_PRESCALAR(BITWIDTH_PRESCA
 );
 
 assign uio_out[0] = rst_n;           // dac_clr_o clear (active low)
-assign uio_out[1] = !enable;         // dac_pd_o        (active low)
-assign uio_out[2] = !(d_Valid_STRB); // dac_wr_o        (active low) WR pulse width > 20 ns
+assign uio_out[1] = enable;          // dac_pd_o        (active low)
+assign uio_out[2] = ~(d_Valid_STRB); // dac_wr_o        (active low) WR pulse width > 20 ns
 assign uio_out[3] = 1'd0; 
 assign uio_out[4] = 1'd0;
 assign uio_out[5] = 1'd0;
