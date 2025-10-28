@@ -32,40 +32,59 @@ localparam BITWIDTH_TIMER      = 8;
 localparam CONFIG_REG_BITWIDTH = 56;
 localparam SYNC_STAGES         = 2;
 
-// ----------------------- CONFIGURATION REGISTER ----------------------- //
 
-wire WR_enable_n;
-wire enable, enable_n;
-wire d_Valid_STRB;
+// ------------------- SYNCHRONIZED ASYNCHRONOUS RESET ------------------- //
+
+reg reset_n_reg [1:0];
+wire reset_n;
+
+assign reset_n = reset_n_reg[1];
+
+always @(posedge clk) begin
+    if (!rst_n) begin
+        reset_n_reg[0]     <= 1'b0;
+        reset_n_reg[1]     <= 1'b0;
+    end else begin
+        reset_n_reg[0]     <= 1'b1;
+        reset_n_reg[1]     <= reset_n_reg[0];
+    end
+end
+
+// ----------------------- CONFIGURATION REGISTER ----------------------- //
 
 // 7 x 8-bit config registers
 reg [7:0] CR0, CR1, CR2, CR3, CR4, CR5, CR6;
 wire [CONFIG_REG_BITWIDTH-1:0] CR_bus;
 
-assign enable = ~enable_n;
+wire enable;
+wire d_Valid_STRB;
+
+wire WR_enable_redge;
+wire WR_enable, WR_enable_async;
+reg WR_enable_reg;
 
 always @(posedge clk) begin
-  if (!rst_n) begin 
-    CR0 <= 8'h49;
-    CR1 <= 8'h05; 
-    CR2 <= 8'h00; 
-    CR3 <= 8'h00;
-    CR4 <= 8'h00; 
-    CR5 <= 8'h32;  
-    CR6 <= 8'h00;
-  end else if (!enable && !WR_enable_n) begin
+    if (!reset_n) begin 
+        CR0 <= 8'h49;
+        CR1 <= 8'h05; 
+        CR2 <= 8'h00; 
+        CR3 <= 8'h00;
+        CR4 <= 8'h00; 
+        CR5 <= 8'h32;  
+        CR6 <= 8'h00;
+    end else if (WR_enable_redge) begin
     // write selected register
-    case (uio_in[5:3]) 
-      3'd0: CR0 <= ui_in;
-      3'd1: CR1 <= ui_in;
-      3'd2: CR2 <= ui_in;
-      3'd3: CR3 <= ui_in;
-      3'd4: CR4 <= ui_in;
-      3'd5: CR5 <= ui_in;
-      3'd6: CR6 <= ui_in;
-      default: /* no write */;
-    endcase
-  end
+        case (uio_in[5:3]) 
+            3'd0: CR0 <= ui_in;
+            3'd1: CR1 <= ui_in;
+            3'd2: CR2 <= ui_in;
+            3'd3: CR3 <= ui_in;
+            3'd4: CR4 <= ui_in;
+            3'd5: CR5 <= ui_in;
+            3'd6: CR6 <= ui_in;
+            default: /* no write */;
+        endcase
+    end
 end
 
 assign CR_bus = {CR0, CR1, CR2, CR3, CR4, CR5, CR6};
@@ -73,25 +92,36 @@ assign uio_oe = 8'b00000111; // upper 5 bits input (control and address input), 
 
 // ----------------------- SYNCHRONIZER ----------------------- //
 
-FG_Synchronizer #(.STAGES (SYNC_STAGES+1)) WR_Enable(
+assign WR_enable_async = ~uio_in[6];
+
+FG_Synchronizer #(.STAGES (SYNC_STAGES)) WR_Enable(
     .clk_i (clk),
-    .rstn_i (rst_n),       
-    .async_i (uio_in[6]),      
-    .sync_o (WR_enable_n)
+    .rstn_i (reset_n),       
+    .async_i (WR_enable_async),      
+    .sync_o (WR_enable)
 );
+
+always @(posedge clk) begin
+    if (!reset_n)
+        WR_enable_reg <= 1'b0;
+    else
+        WR_enable_reg <= WR_enable;
+end
+
+assign WR_enable_redge = ~WR_enable_reg & WR_enable;
 
 FG_Synchronizer #(.STAGES (SYNC_STAGES)) Enable(
     .clk_i (clk),
-    .rstn_i (rst_n),       
+    .rstn_i (reset_n),       
     .async_i (uio_in[7]),      
-    .sync_o (enable_n)
+    .sync_o (enable)
 );
 
 // ----------------------- FUNCTION GENERATOR ----------------------- //
 
 FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_PRESCALAR(BITWIDTH_PRESCALAR), .BITWIDTH_TIMER (BITWIDTH_TIMER), .CONFIG_REG_BITWIDTH(CONFIG_REG_BITWIDTH)) FG(
     .clk_i (clk),
-    .rstn_i (rst_n),
+    .rstn_i (reset_n),
     .enable_i (enable),
 
     .CR_bus_i (CR_bus),
@@ -99,7 +129,7 @@ FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_PRESCALAR(BITWIDTH_PRESCA
     .outValid_STRB_o(d_Valid_STRB)
 );
 
-assign uio_out[0] = rst_n;           // dac_clr_o clear (active low)
+assign uio_out[0] = reset_n;           // dac_clr_o clear (active low)
 assign uio_out[1] = enable;          // dac_pd_o        (active low)
 assign uio_out[2] = ~(d_Valid_STRB); // dac_wr_o        (active low) WR pulse width > 20 ns
 assign uio_out[3] = 1'd0; 
