@@ -19,11 +19,10 @@ A compact, **programmable 8‑bit function generator** for TinyTapeout. Outputs 
 
 ## 🚀 Quick Start
 1. **Wire the DAC** (see *AD5330 Hookup*).
-2. Power up with **`ENABLE_n=1`** (halted).
-3. (Optional) Program **`CR0..CR6`** while halted.
-4. Drive **`ENABLE_n=0`** → generator runs (default: **~20 kHz sine**).
+2. Power up with **`ENABLE=1`** (default: **~2 kHz sine**).
+3. (Optional) Program **`CR0..CR6`**.
 
-**Write protocol:** While **halted** (`ENABLE_n=1`), assert **`WR_n=0` for ≥3 clocks** with stable `ADDR` + `DATA`. Then release `WR_n` and set **`ENABLE_n=0`** to run.
+**Write protocol:** Assert **`WR_n=0` for ≥3 clocks** with stable `ADDR` + `DATA`.
 
 ---
 
@@ -51,14 +50,12 @@ A compact, **programmable 8‑bit function generator** for TinyTapeout. Outputs 
 | `rst_n`        | in  | 1 | Async reset (active-low) |
 | `ena`          | in  | 1 | Always `1` on TinyTapeout |
 
-_Minimal DAC control exposed on `uio_out[2:0]`: `dac_wr_n`, `dac_pd_n` (high = enabled), `dac_clr_n`._
+_Minimal DAC control exposed on `uio_out[2:0]`: `dac_wr_n`, `dac_pd_n`, `dac_clr_n`._
 
 ---
 
 ## 🔌 AD5330 Hookup (Minimal)
 - **Data:** `uo_out[7:0]` → AD5330 `DB[7:0]`
 - **Control:** `uio_out[2] → /WR`, `uio_out[1] → PD_n` (**high = enabled**), `uio_out[0] → /CLR` (**high** normal)
-
-> If your board exposes `/CS` or `LDAC`, hard‑wire them.
 
 ---
