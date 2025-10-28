@@ -31,7 +31,7 @@ A compact, **programmable 8‑bit function generator** for TinyTapeout. Outputs 
 - **Timer + Prescaler** timebase
 - **7×8‑bit** write‑only config
 - **8‑bit parallel** DAC output
-- Default on reset: **sine ~20 kHz**
+- Default on reset: **sine ~2 kHz**
 
 ---
 
