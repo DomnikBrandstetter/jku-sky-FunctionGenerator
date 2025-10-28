@@ -129,7 +129,7 @@ FG_FunctionGenerator #(.BITWIDTH (BITWIDTH), .BITWIDTH_PRESCALAR(BITWIDTH_PRESCA
     .outValid_STRB_o(d_Valid_STRB)
 );
 
-assign uio_out[0] = reset_n;           // dac_clr_o clear (active low)
+assign uio_out[0] = reset_n;         // dac_clr_o clear (active low)
 assign uio_out[1] = enable;          // dac_pd_o        (active low)
 assign uio_out[2] = ~(d_Valid_STRB); // dac_wr_o        (active low) WR pulse width > 20 ns
 assign uio_out[3] = 1'd0; 
@@ -137,5 +137,6 @@ assign uio_out[4] = 1'd0;
 assign uio_out[5] = 1'd0;
 assign uio_out[6] = 1'd0;
 assign uio_out[7] = 1'd0;
+
 
 endmodule
