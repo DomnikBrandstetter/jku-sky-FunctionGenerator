@@ -13,7 +13,7 @@ To learn more and get started, visit https://tinytapeout.com.
 # TinyTapeout: 8-bit Function Generator
 **Module:** `tt_um_FG_TOP_Dominik_Brandstetter`
 
-A compact, **programmable 8‑bit function generator** for TinyTapeout. Outputs **DC**, **CORDIC sine**, or **trapezoid/pulse** (rise–hold–fall). Sampling is driven by an on‑chip **timer + prescaler**. Configure via a simple **write‑only 7×8‑bit register map** over TT GPIO. The 8‑bit parallel output feeds an external DAC (e.g., **AD5330**) or an R‑2R ladder.
+A compact, **programmable 8‑bit function generator** for TinyTapeout. Outputs **DC**, **CORDIC sine**, or **trapezoid/pulse** (rise–hold–fall). Sampling is driven by an on‑chip **timer + prescaler**. Configure via a simple **write‑only 7×8‑bit register map** over TT GPIO. The 8‑bit parallel output feeds an external DAC (e.g. **AD5330**) or an R‑2R ladder.
 
 ---
 
