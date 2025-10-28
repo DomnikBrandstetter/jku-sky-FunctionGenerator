@@ -40,7 +40,7 @@ A compact, **programmable 8‑bit function generator** for TinyTapeout. Outputs 
 |---|---:|---:|---|
 | `ui_in[7:0]`   | in  | 8 | Register **data bus** (write-only) |
 | `uo_out[7:0]`  | out | 8 | **DAC data** (parallel 8-bit) |
-| `uio_in[7]`    | in  | 1 | **ENABLE_n** (active-low): Low = run, High = halt & program |
+| `uio_in[7]`    | in  | 1 | **ENABLE** Low = halt, High = run |
 | `uio_in[6]`    | in  | 1 | **WR_n** (active-low) – latch selected register |
 | `uio_in[5:3]`  | in  | 3 | **ADDR[2:0]** – select `CR0..CR6` (0..6) |
 | `uio_out[0]`   | out | 1 | **dac_clr_n** → AD5330 `/CLR` |
