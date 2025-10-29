@@ -107,7 +107,7 @@ end
 
 
 // ----------------------- SATURATED ADDITION FUNCTION ----------------------- //
-function [BITWIDTH-1:0] sat_add;
+function automatic [BITWIDTH-1:0] sat_add;
     input signed [BITWIDTH-1:0] a;
     input signed [BITWIDTH-1:0] b;
     reg   signed [BITWIDTH:0]   sum_ext; 
@@ -128,3 +128,4 @@ end
 endfunction
 
 endmodule
+
